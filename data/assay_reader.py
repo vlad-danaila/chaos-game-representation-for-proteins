@@ -1,4 +1,6 @@
 from Bio import SeqIO
+from typing import List
+import collections
 
 def skip_header(file):
     file.readline()
@@ -66,6 +68,43 @@ def read_antibody_fasta_sequences(fasta_file_path):
         antibody_seq_dict[antibody_id] = seq
     return antibody_seq_dict
 
+def print_antibodies_vs_viruses_stats(assays_list: List[Assay], virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict):
+    counter_virus_vs_antibody = collections.defaultdict(lambda: 0)
+
+    counter_virus_with_seq_assays = 0
+    counter_virus_with_seq = collections.defaultdict(lambda: 0)
+
+    counter_antibody_with_seq_light_assays = 0
+    counter_antibody_with_seq_heavy_assays = 0
+    counter_antibody_with_seq_both_assays = 0
+    counter_antibody_with_seq_or_assays = 0
+    counter_all_known = 0
+
+    for assay in assays_list:
+        counter_virus_vs_antibody[assay.virus_id] += 1
+        is_known_virus_seq = assay.virus_id in virus_seq_dict
+        if is_known_virus_seq:
+            counter_virus_with_seq_assays += is_known_virus_seq
+            counter_virus_with_seq[assay.virus_id] += is_known_virus_seq
+        is_known_antibody_light = assay.antibody_id in antibody_light_seq_dict
+        is_known_antibody_heavy = assay.antibody_id in antibody_heavy_seq_dict
+        counter_antibody_with_seq_light_assays += is_known_antibody_light
+        counter_antibody_with_seq_heavy_assays += is_known_antibody_heavy
+        counter_antibody_with_seq_both_assays += (is_known_antibody_light and is_known_antibody_heavy)
+        counter_antibody_with_seq_or_assays += (is_known_antibody_light or is_known_antibody_heavy)
+        counter_all_known += (is_known_antibody_light and is_known_antibody_heavy and is_known_virus_seq)
+
+    print(len(counter_virus_vs_antibody), 'distinct viruses in assays')
+    print('Max antibodies tests for virus', max(counter_virus_vs_antibody.values()))
+    print('Min antibodies tests for virus', min(counter_virus_vs_antibody.values()))
+    print('Assays with known virus seq', counter_virus_with_seq_assays)
+    print('Viruses with known seq', len(counter_virus_with_seq))
+    print('Assays with antibodies with known light seq', counter_antibody_with_seq_light_assays)
+    print('Assays with antibodies with known heavy seq', counter_antibody_with_seq_heavy_assays)
+    print('Assays with antibodies with known heavy & light seq', counter_antibody_with_seq_both_assays)
+    print('Assays with antibodies with known heavy or light seq', counter_antibody_with_seq_or_assays)
+    print('Assays with all known', counter_all_known)
+
 if __name__ == '__main__':
     assay_reader = AssayReader('assay_CATNAP.txt')
     print(len(assay_reader.assays), 'lab records')
@@ -77,4 +116,6 @@ if __name__ == '__main__':
     print(len(antibody_heavy_seq_dict), 'antibody (heavy protein chain) sequences')
 
     antibody_light_seq_dict = read_antibody_fasta_sequences("light_seqs_aa_CATNAP.fasta")
-    print(len(antibody_light_seq_dict), 'virus (light protein chain) sequences')
+    print(len(antibody_light_seq_dict), 'antibody (light protein chain) sequences')
+
+    print_antibodies_vs_viruses_stats(assay_reader.assays, virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict)
