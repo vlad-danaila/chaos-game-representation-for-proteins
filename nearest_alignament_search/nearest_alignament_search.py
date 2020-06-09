@@ -20,5 +20,6 @@ def read_data():
 
 
 if __name__ == '__main__':
-    pass
-    # print('Filtered assays', len(assays))
+    assays = read_data()
+    print('Filtered assays', len(assays))
+    print(assays)
