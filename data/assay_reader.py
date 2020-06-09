@@ -84,6 +84,7 @@ def print_antibodies_vs_viruses_stats(assays_list: List[Assay], virus_seq_dict, 
     counter_antibody_with_seq_both_assays = 0
     counter_antibody_with_seq_or_assays = 0
     counter_all_known = 0
+    counter_all_known_and_single_antibody = 0
 
     for assay in assays_list:
         counter_virus_vs_antibody[assay.virus_id] += 1
@@ -97,7 +98,9 @@ def print_antibodies_vs_viruses_stats(assays_list: List[Assay], virus_seq_dict, 
         counter_antibody_with_seq_heavy_assays += is_known_antibody_heavy
         counter_antibody_with_seq_both_assays += (is_known_antibody_light and is_known_antibody_heavy)
         counter_antibody_with_seq_or_assays += (is_known_antibody_light or is_known_antibody_heavy)
-        counter_all_known += (is_known_antibody_light and is_known_antibody_heavy and is_known_virus_seq)
+        all_known = is_known_antibody_light and is_known_antibody_heavy and is_known_virus_seq
+        counter_all_known += all_known
+        counter_all_known_and_single_antibody += (all_known and len(assay.antibody_ids) == 1)
 
     print(len(counter_virus_vs_antibody), 'distinct viruses in assays')
     print('Max antibodies tests for virus', max(counter_virus_vs_antibody.values()))
@@ -109,6 +112,10 @@ def print_antibodies_vs_viruses_stats(assays_list: List[Assay], virus_seq_dict, 
     print('Assays with antibodies with known heavy & light seq', counter_antibody_with_seq_both_assays)
     print('Assays with antibodies with known heavy or light seq', counter_antibody_with_seq_or_assays)
     print('Assays with all known', counter_all_known)
+    print('Assays with all known an single antibody', counter_all_known_and_single_antibody)
+    # Display how many assays per virus stain
+    # for key in counter_virus_vs_antibody:
+    #     print(key, counter_virus_vs_antibody[key])
 
 def are_all_antibodies_known(antibody_ids, known_antibody_ids):
     for antibody_id in antibody_ids:
@@ -122,6 +129,7 @@ if __name__ == '__main__':
 
     virus_seq_dict = read_virus_fasta_sequences("virseqs_aa_CATNAP.fasta")
     print(len(virus_seq_dict), 'virus sequences')
+    print('Length of one sequence', len(next(iter(virus_seq_dict.values()))))
 
     antibody_heavy_seq_dict = read_antibody_fasta_sequences("heavy_seqs_aa_CATNAP.fasta")
     print(len(antibody_heavy_seq_dict), 'antibody (heavy protein chain) sequences')
