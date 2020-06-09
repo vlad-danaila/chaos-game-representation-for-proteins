@@ -5,10 +5,20 @@ import collections
 def skip_header(file):
     file.readline()
 
-class Assay():
+class AssayMultipleAntibodies():
 
     def __init__(self, antibody_ids, virus_id, ic50):
         self.antibody_ids = antibody_ids
+        self.virus_id = virus_id
+        self.ic50 = ic50
+
+    def __repr__(self):
+        return '(antibodys = {} virus = {} ic50 = {})'.format(self.antibody_ids, self.virus_id, self.ic50)
+
+class Assay():
+
+    def __init__(self, antibody_id, virus_id, ic50):
+        self.antibody_id = antibody_id
         self.virus_id = virus_id
         self.ic50 = ic50
 
@@ -26,16 +36,19 @@ class AssayReader():
             skip_header(file)
             for line in file:
                 line_split = line.split()
-                antibody_ids = self.find_antibody_ids(line_split[0])
+                # skip if there are multiple antibodies in the same assay
+                if '+' in line_split[0]:
+                    continue
+                antibody_data = self.find_antibody_data(line_split[0])
                 virus_id = line_split[1]
                 ic50 = self.find_ic50_from_line_split(line_split)
-                assay = Assay(antibody_ids, virus_id, ic50)
+                assay = Assay(antibody_data, virus_id, ic50)
                 self.assays.append(assay)
 
-    def find_antibody_ids(self, antibodys_as_text: str):
+    def find_antibody_data(self, antibodys_as_text: str):
         if '+' in antibodys_as_text:
-            return antibodys_as_text.split('+')
-        return [ antibodys_as_text ]
+            raise Exception('Does not support multiple antibody ids.')
+        return antibodys_as_text
 
     def find_ic50_from_line_split(self, line_split):
         ic50 = None
@@ -55,6 +68,24 @@ class AssayReader():
                 pass
         return ic50
 
+class AssayMultipleAntibodyReader(AssayReader):
+
+    def read_file(self, assay_file_path):
+        with open(assay_file_path, 'r') as file:
+            skip_header(file)
+            for line in file:
+                line_split = line.split()
+                antibody_data = self.find_antibody_data(line_split[0])
+                virus_id = line_split[1]
+                ic50 = self.find_ic50_from_line_split(line_split)
+                assay = AssayMultipleAntibodies(antibody_data, virus_id, ic50)
+                self.assays.append(assay)
+
+    def find_antibody_data(self, antibodys_as_text: str):
+        if '+' in antibodys_as_text:
+            return antibodys_as_text.split('+')
+        return [ antibodys_as_text ]
+
 def read_virus_fasta_sequences(fasta_file_path):
     virus_seq_dict = {}
     for seq_record in SeqIO.parse(fasta_file_path, "fasta"):
@@ -73,7 +104,7 @@ def read_antibody_fasta_sequences(fasta_file_path):
         antibody_seq_dict[antibody_id] = seq
     return antibody_seq_dict
 
-def print_antibodies_vs_viruses_stats(assays_list: List[Assay], virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict):
+def print_multiple_antibodies_vs_viruses_stats(assays_list: List[AssayMultipleAntibodies], virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict):
     counter_virus_vs_antibody = collections.defaultdict(lambda: 0)
 
     counter_virus_with_seq_assays = 0
@@ -123,9 +154,52 @@ def are_all_antibodies_known(antibody_ids, known_antibody_ids):
             return False
     return True
 
+def print_single_antibodies_vs_viruses_stats(assays_list: List[AssayMultipleAntibodies], virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict):
+    counter_virus_vs_antibody = collections.defaultdict(lambda: 0)
+
+    counter_virus_with_seq_assays = 0
+    counter_virus_with_seq = collections.defaultdict(lambda: 0)
+
+    counter_antibody_with_seq_light_assays = 0
+    counter_antibody_with_seq_heavy_assays = 0
+    counter_antibody_with_seq_both_assays = 0
+    counter_antibody_with_seq_or_assays = 0
+    counter_all_known = 0
+    counter_all_known_and_single_antibody = 0
+
+    for assay in assays_list:
+        counter_virus_vs_antibody[assay.virus_id] += 1
+        is_known_virus_seq = assay.virus_id in virus_seq_dict
+        if is_known_virus_seq:
+            counter_virus_with_seq_assays += is_known_virus_seq
+            counter_virus_with_seq[assay.virus_id] += is_known_virus_seq
+        is_known_antibody_light = assay.antibody_id in antibody_light_seq_dict
+        is_known_antibody_heavy = assay.antibody_id in antibody_heavy_seq_dict
+        counter_antibody_with_seq_light_assays += is_known_antibody_light
+        counter_antibody_with_seq_heavy_assays += is_known_antibody_heavy
+        counter_antibody_with_seq_both_assays += (is_known_antibody_light and is_known_antibody_heavy)
+        counter_antibody_with_seq_or_assays += (is_known_antibody_light or is_known_antibody_heavy)
+        all_known = is_known_antibody_light and is_known_antibody_heavy and is_known_virus_seq
+        counter_all_known += all_known
+
+    print(len(counter_virus_vs_antibody), 'distinct viruses in assays')
+    print('Max antibodies tests for virus', max(counter_virus_vs_antibody.values()))
+    print('Min antibodies tests for virus', min(counter_virus_vs_antibody.values()))
+    print('Assays with known virus seq', counter_virus_with_seq_assays)
+    print('Viruses with known seq', len(counter_virus_with_seq))
+    print('Assays with antibodies with known light seq', counter_antibody_with_seq_light_assays)
+    print('Assays with antibodies with known heavy seq', counter_antibody_with_seq_heavy_assays)
+    print('Assays with antibodies with known heavy & light seq', counter_antibody_with_seq_both_assays)
+    print('Assays with antibodies with known heavy or light seq', counter_antibody_with_seq_or_assays)
+    print('Assays with all known', counter_all_known)
+
 if __name__ == '__main__':
-    assay_reader = AssayReader('assay_CATNAP.txt')
-    print(len(assay_reader.assays), 'lab records')
+    ASSAY_FILE_PATH = 'assay_CATNAP.txt'
+
+    print('MULTIPLE ANTIBODIES VERSION -----------------')
+
+    assay_multiple_antibodies_reader = AssayMultipleAntibodyReader(ASSAY_FILE_PATH)
+    print(len(assay_multiple_antibodies_reader.assays), 'lab multiple antibodies records')
 
     virus_seq_dict = read_virus_fasta_sequences("virseqs_aa_CATNAP.fasta")
     print(len(virus_seq_dict), 'virus sequences')
@@ -137,4 +211,11 @@ if __name__ == '__main__':
     antibody_light_seq_dict = read_antibody_fasta_sequences("light_seqs_aa_CATNAP.fasta")
     print(len(antibody_light_seq_dict), 'antibody (light protein chain) sequences')
 
-    print_antibodies_vs_viruses_stats(assay_reader.assays, virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict)
+    print_multiple_antibodies_vs_viruses_stats(assay_multiple_antibodies_reader.assays, virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict)
+
+    print('SINGLE ANTIBODIES VERSION -----------------')
+
+    assay_reader = AssayReader(ASSAY_FILE_PATH)
+    print(len(assay_reader.assays), 'lab single antibodies records')
+
+    print_single_antibodies_vs_viruses_stats(assay_reader.assays, virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict)
