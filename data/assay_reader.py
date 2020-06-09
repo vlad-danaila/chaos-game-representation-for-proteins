@@ -266,4 +266,3 @@ if __name__ == '__main__':
     assay_filtered_antibodies_reader = FilteredAssayReader(ASSAY_FILE_PATH, VIRUS_SEQ, ANTIBODY_LIGHT_CHAIN_SEQ, ANTIBODY_HEAVY_CHAIN_SEQ)
     assays = assay_filtered_antibodies_reader.read_file()
     print('Filtered assays', len(assays))
-    print(assays)
