@@ -7,13 +7,13 @@ def skip_header(file):
 
 class Assay():
 
-    def __init__(self, antibody_id, virus_id, ic50):
-        self.antibody_id = antibody_id
+    def __init__(self, antibody_ids, virus_id, ic50):
+        self.antibody_ids = antibody_ids
         self.virus_id = virus_id
         self.ic50 = ic50
 
     def __repr__(self):
-        return '(antibody = {} virus = {} ic50 = {})'.format(self.antibody_id, self.virus_id, self.ic50)
+        return '(antibodys = {} virus = {} ic50 = {})'.format(self.antibody_ids, self.virus_id, self.ic50)
 
 class AssayReader():
 
@@ -26,11 +26,16 @@ class AssayReader():
             skip_header(file)
             for line in file:
                 line_split = line.split()
-                antibody_id = line_split[0]
+                antibody_ids = self.find_antibody_ids(line_split[0])
                 virus_id = line_split[1]
                 ic50 = self.find_ic50_from_line_split(line_split)
-                assay = Assay(antibody_id, virus_id, ic50)
+                assay = Assay(antibody_ids, virus_id, ic50)
                 self.assays.append(assay)
+
+    def find_antibody_ids(self, antibodys_as_text: str):
+        if '+' in antibodys_as_text:
+            return antibodys_as_text.split('+')
+        return [ antibodys_as_text ]
 
     def find_ic50_from_line_split(self, line_split):
         ic50 = None
@@ -86,8 +91,8 @@ def print_antibodies_vs_viruses_stats(assays_list: List[Assay], virus_seq_dict, 
         if is_known_virus_seq:
             counter_virus_with_seq_assays += is_known_virus_seq
             counter_virus_with_seq[assay.virus_id] += is_known_virus_seq
-        is_known_antibody_light = assay.antibody_id in antibody_light_seq_dict
-        is_known_antibody_heavy = assay.antibody_id in antibody_heavy_seq_dict
+        is_known_antibody_light = are_all_antibodies_known(assay.antibody_ids, antibody_light_seq_dict)
+        is_known_antibody_heavy = are_all_antibodies_known(assay.antibody_ids, antibody_heavy_seq_dict)
         counter_antibody_with_seq_light_assays += is_known_antibody_light
         counter_antibody_with_seq_heavy_assays += is_known_antibody_heavy
         counter_antibody_with_seq_both_assays += (is_known_antibody_light and is_known_antibody_heavy)
@@ -104,6 +109,12 @@ def print_antibodies_vs_viruses_stats(assays_list: List[Assay], virus_seq_dict, 
     print('Assays with antibodies with known heavy & light seq', counter_antibody_with_seq_both_assays)
     print('Assays with antibodies with known heavy or light seq', counter_antibody_with_seq_or_assays)
     print('Assays with all known', counter_all_known)
+
+def are_all_antibodies_known(antibody_ids, known_antibody_ids):
+    for antibody_id in antibody_ids:
+        if not antibody_id in known_antibody_ids:
+            return False
+    return True
 
 if __name__ == '__main__':
     assay_reader = AssayReader('assay_CATNAP.txt')
