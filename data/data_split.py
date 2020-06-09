@@ -1,12 +1,6 @@
 from data.assay_reader import Assay, FilteredAssayReader
 import random
 
-def cross_validate():
-    pass
-
-def train_eval():
-    pass
-
 class DatasetSplit():
     def __init__(self, train: list, val: list, test: list):
         self.train = train
