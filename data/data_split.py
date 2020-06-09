@@ -1,5 +1,6 @@
 from data.assay_reader import Assay, FilteredAssayReader
 import random
+import constants
 
 class DatasetSplit():
     def __init__(self, train: list, val: list, test: list):
@@ -51,17 +52,13 @@ def read_random_splits_from_file(file_path):
         return DatasetSplit(train_indexes, val_indexes, test_indexes)
 
 if __name__ == '__main__':
-    ASSAY_FILE_PATH = 'assay_CATNAP.txt'
-    VIRUS_SEQ = "virseqs_aa_CATNAP.fasta"
-    ANTIBODY_LIGHT_CHAIN_SEQ = "light_seqs_aa_CATNAP.fasta"
-    ANTIBODY_HEAVY_CHAIN_SEQ = "heavy_seqs_aa_CATNAP.fasta"
-    RANDOM_SPLIT = 'random_split_indexes'
 
-    # assay_filtered_antibodies_reader = FilteredAssayReader(ASSAY_FILE_PATH, VIRUS_SEQ, ANTIBODY_LIGHT_CHAIN_SEQ, ANTIBODY_HEAVY_CHAIN_SEQ)
+    # assay_filtered_antibodies_reader = FilteredAssayReader(
+    #     constants.ASSAY_FILE_PATH, constants.VIRUS_SEQ, constants.ANTIBODY_LIGHT_CHAIN_SEQ, constants.ANTIBODY_HEAVY_CHAIN_SEQ)
     # assays = assay_filtered_antibodies_reader.read_file()
     # print('Filtered assays', len(assays))
 
     # dataset_split = get_random_splits(82988, 0.8, 0.1, 0.1)
-    # dataset_split.serilize(RANDOM_SPLIT)
+    # dataset_split.serilize(constants.RANDOM_SPLIT)
 
-    dataset_split = read_random_splits_from_file(RANDOM_SPLIT)
+    dataset_split = read_random_splits_from_file(constants.RANDOM_SPLIT)

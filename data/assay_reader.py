@@ -1,6 +1,7 @@
 from Bio import SeqIO
 from typing import List
 import collections
+import constants
 
 def skip_header(file):
     file.readline()
@@ -230,32 +231,27 @@ def print_single_antibodies_vs_viruses_stats(assays_list: List[AssayMultipleAnti
     print('Assays with all known', counter_all_known)
 
 if __name__ == '__main__':
-    ASSAY_FILE_PATH = 'assay_CATNAP.txt'
-    VIRUS_SEQ = "virseqs_aa_CATNAP.fasta"
-    ANTIBODY_LIGHT_CHAIN_SEQ = "light_seqs_aa_CATNAP.fasta"
-    ANTIBODY_HEAVY_CHAIN_SEQ = "heavy_seqs_aa_CATNAP.fasta"
-
     print('MULTIPLE ANTIBODIES VERSION -----------------')
 
-    assay_multiple_antibodies_reader = AssayMultipleAntibodyReader(ASSAY_FILE_PATH)
+    assay_multiple_antibodies_reader = AssayMultipleAntibodyReader(constants.ASSAY_FILE_PATH)
     assays = assay_multiple_antibodies_reader.read_file()
     print(len(assays), 'lab multiple antibodies records')
 
-    virus_seq_dict = read_virus_fasta_sequences(VIRUS_SEQ)
+    virus_seq_dict = read_virus_fasta_sequences(constants.VIRUS_SEQ)
     print(len(virus_seq_dict), 'virus sequences')
     print('Length of one sequence', len(next(iter(virus_seq_dict.values()))))
 
-    antibody_heavy_seq_dict = read_antibody_fasta_sequences(ANTIBODY_HEAVY_CHAIN_SEQ)
+    antibody_heavy_seq_dict = read_antibody_fasta_sequences(constants.ANTIBODY_HEAVY_CHAIN_SEQ)
     print(len(antibody_heavy_seq_dict), 'antibody (heavy protein chain) sequences')
 
-    antibody_light_seq_dict = read_antibody_fasta_sequences(ANTIBODY_LIGHT_CHAIN_SEQ)
+    antibody_light_seq_dict = read_antibody_fasta_sequences(constants.ANTIBODY_LIGHT_CHAIN_SEQ)
     print(len(antibody_light_seq_dict), 'antibody (light protein chain) sequences')
 
     print_multiple_antibodies_vs_viruses_stats(assays, virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict)
 
     print('SINGLE ANTIBODIES VERSION -----------------')
 
-    assay_reader = AssayReader(ASSAY_FILE_PATH)
+    assay_reader = AssayReader(constants.ASSAY_FILE_PATH)
     assays = assay_reader.read_file()
     print(len(assays), 'lab single antibodies records')
 
@@ -263,6 +259,7 @@ if __name__ == '__main__':
 
     print('FILTERED ASSAYS VERSION -----------------')
 
-    assay_filtered_antibodies_reader = FilteredAssayReader(ASSAY_FILE_PATH, VIRUS_SEQ, ANTIBODY_LIGHT_CHAIN_SEQ, ANTIBODY_HEAVY_CHAIN_SEQ)
+    assay_filtered_antibodies_reader = FilteredAssayReader(
+        constants.ASSAY_FILE_PATH, constants.VIRUS_SEQ, constants.ANTIBODY_LIGHT_CHAIN_SEQ, constants.ANTIBODY_HEAVY_CHAIN_SEQ)
     assays = assay_filtered_antibodies_reader.read_file()
     print('Filtered assays', len(assays))
