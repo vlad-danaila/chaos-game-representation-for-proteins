@@ -13,6 +13,15 @@ class DatasetSplit():
         self.val = val
         self.test = test
 
+    def serilize(self, file_path):
+        with open(file_path, 'w') as file:
+            file.write('train\n')
+            file.write(' '.join([str(n) for n in self.train]) + '\n')
+            file.write('validation\n')
+            file.write(' '.join([str(n) for n in self.val]) + '\n')
+            file.write('test\n')
+            file.write(' '.join([str(n) for n in self.test]) + '\n')
+
 def get_random_splits(dataset_size: int, train: float, validation: float, test: float) -> DatasetSplit:
     len_train = int(dataset_size * train)
     len_val = int(dataset_size * validation)
@@ -32,9 +41,11 @@ if __name__ == '__main__':
     VIRUS_SEQ = "virseqs_aa_CATNAP.fasta"
     ANTIBODY_LIGHT_CHAIN_SEQ = "light_seqs_aa_CATNAP.fasta"
     ANTIBODY_HEAVY_CHAIN_SEQ = "heavy_seqs_aa_CATNAP.fasta"
+    RANDOM_SPLIT = 'random_split_indexes'
 
     # assay_filtered_antibodies_reader = FilteredAssayReader(ASSAY_FILE_PATH, VIRUS_SEQ, ANTIBODY_LIGHT_CHAIN_SEQ, ANTIBODY_HEAVY_CHAIN_SEQ)
     # assays = assay_filtered_antibodies_reader.read_file()
     # print('Filtered assays', len(assays))
 
     dataset_split = get_random_splits(82988, 0.8, 0.1, 0.1)
+    dataset_split.serilize(RANDOM_SPLIT)
