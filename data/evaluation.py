@@ -30,11 +30,31 @@ def get_random_splits(dataset_size: int, train: float, validation: float, test: 
     print(len_val, 'records for validation')
     print(len_test, 'records for testing')
     indexes = set(range(dataset_size))
-    validation_indexes = random.sample(indexes, len_val)
+    validation_indexes = list(random.sample(indexes, len_val))
     indexes = indexes - set(validation_indexes)
-    test_indexes = random.sample(indexes, len_test)
-    indexes = indexes - set(test_indexes)
+    test_indexes = list(random.sample(indexes, len_test))
+    indexes = list(indexes - set(test_indexes))
+    # Shuffle all sequences
+    random.shuffle(indexes)
+    random.shuffle(validation_indexes)
+    random.shuffle(test_indexes)
     return DatasetSplit(indexes, validation_indexes, test_indexes)
+
+def read_random_splits_from_file(file_path):
+    with open(file_path, 'r') as file:
+        line = file.readline()
+        assert line == 'train\n'
+        train_indexes = file.readline()
+        train_indexes = [int(s) for s in train_indexes.split(' ')]
+        line = file.readline()
+        assert line == 'validation\n'
+        val_indexes = file.readline()
+        val_indexes = [int(s) for s in val_indexes.split(' ')]
+        line = file.readline()
+        assert line == 'test\n'
+        test_indexes = file.readline()
+        test_indexes = [int(s) for s in test_indexes.split(' ')]
+        return DatasetSplit(train_indexes, val_indexes, test_indexes)
 
 if __name__ == '__main__':
     ASSAY_FILE_PATH = 'assay_CATNAP.txt'
@@ -47,5 +67,7 @@ if __name__ == '__main__':
     # assays = assay_filtered_antibodies_reader.read_file()
     # print('Filtered assays', len(assays))
 
-    dataset_split = get_random_splits(82988, 0.8, 0.1, 0.1)
-    dataset_split.serilize(RANDOM_SPLIT)
+    # dataset_split = get_random_splits(82988, 0.8, 0.1, 0.1)
+    # dataset_split.serilize(RANDOM_SPLIT)
+
+    dataset_split = read_random_splits_from_file(RANDOM_SPLIT)
