@@ -2,6 +2,7 @@ from data.assay_reader import Assay, FilteredAssayReader
 import random
 import constants
 import numpy as np
+import os.path
 
 class DatasetSplit():
     def __init__(self, train: list, val: list, test: list):
@@ -57,7 +58,11 @@ def read_random_splits_from_file(file_path):
 
 def read_data():
     assay_filtered_antibodies_reader = FilteredAssayReader(
-        constants.ASSAY_FILE_PATH, constants.VIRUS_SEQ, constants.ANTIBODY_LIGHT_CHAIN_SEQ, constants.ANTIBODY_HEAVY_CHAIN_SEQ)
+        curent_folder() + constants.ASSAY_FILE_PATH,
+        curent_folder() + constants.VIRUS_SEQ,
+        curent_folder() + constants.ANTIBODY_LIGHT_CHAIN_SEQ,
+        curent_folder() + constants.ANTIBODY_HEAVY_CHAIN_SEQ
+    )
     assays = assay_filtered_antibodies_reader.read_file()
     return assays
 
@@ -67,6 +72,13 @@ def read_data_by_split(dataset_split):
     val_assays = assays[dataset_split.val]
     test_assays = assays[dataset_split.test]
     return train_assays, val_assays, test_assays
+
+def curent_folder():
+    return os.path.split(__file__)[0] + os.path.sep
+
+def read_data_by_serialized_random_split():
+    dataset_split = read_random_splits_from_file(curent_folder() + constants.RANDOM_SPLIT)
+    return read_data_by_split(dataset_split)
 
 if __name__ == '__main__':
     # dataset_split = get_random_splits(82988, 0.8, 0.1, 0.1)

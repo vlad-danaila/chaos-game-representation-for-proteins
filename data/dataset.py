@@ -1,6 +1,4 @@
 from torch.utils.data import Dataset
-from data.assay_reader import FilteredAssayReader
-import constants
 
 class AssayDataset(Dataset):
 
