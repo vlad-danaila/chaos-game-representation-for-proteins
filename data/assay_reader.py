@@ -94,7 +94,6 @@ class FilteredAssayReader(AssayReader):
                 antibody_id = self.find_antibody_data(line_split[0])
                 virus_id = line_split[1]
                 ic50 = self.find_ic50_from_line_split(line_split)
-                # assay = Assay(antibody_id, virus_id, ic50)
 
                 is_known_virus_seq = virus_id in virus_seq_dict
                 is_known_antibody_light = antibody_id in antibody_light_seq_dict
@@ -117,6 +116,7 @@ class FilteredAssayReader(AssayReader):
             return Assay(antibody_id, virus_id, (ic50[0] + ic50[1]) / 2)
         elif len(ic50) > 2:
             included = []
+            # Filter outliers using p value test
             for i in range(len(ic50)):
                 ic50_excluded = list(ic50)
                 del ic50_excluded[i]
