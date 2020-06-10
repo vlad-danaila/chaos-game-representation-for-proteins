@@ -1,6 +1,7 @@
 from data.assay_reader import Assay, FilteredAssayReader
 import random
 import constants
+import numpy as np
 
 class DatasetSplit():
     def __init__(self, train: list, val: list, test: list):
@@ -54,14 +55,23 @@ def read_random_splits_from_file(file_path):
         test_indexes = [int(s) for s in test_indexes.split(' ')]
         return DatasetSplit(train_indexes, val_indexes, test_indexes)
 
+def read_data():
+    assay_filtered_antibodies_reader = FilteredAssayReader(
+        constants.ASSAY_FILE_PATH, constants.VIRUS_SEQ, constants.ANTIBODY_LIGHT_CHAIN_SEQ, constants.ANTIBODY_HEAVY_CHAIN_SEQ)
+    assays = assay_filtered_antibodies_reader.read_file()
+    return assays
+
+def read_data_by_split(dataset_split):
+    assays = np.array(read_data())
+    train_assays = assays[dataset_split.train]
+    val_assays = assays[dataset_split.val]
+    test_assays = assays[dataset_split.test]
+    return train_assays, val_assays, test_assays
+
 if __name__ == '__main__':
-
-    # assay_filtered_antibodies_reader = FilteredAssayReader(
-    #     constants.ASSAY_FILE_PATH, constants.VIRUS_SEQ, constants.ANTIBODY_LIGHT_CHAIN_SEQ, constants.ANTIBODY_HEAVY_CHAIN_SEQ)
-    # assays = assay_filtered_antibodies_reader.read_file()
-    # print('Filtered assays', len(assays))
-
     # dataset_split = get_random_splits(82988, 0.8, 0.1, 0.1)
     # dataset_split.serilize(constants.RANDOM_SPLIT)
 
     dataset_split = read_random_splits_from_file(constants.RANDOM_SPLIT)
+
+    train_assays, val_assays, test_assays = read_data_by_split(dataset_split)
