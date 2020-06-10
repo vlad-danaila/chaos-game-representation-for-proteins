@@ -1,8 +1,10 @@
-ASSAY_FILE_PATH = 'assay_CATNAP.txt'
+DATA_ROOT = 'static/'
 
-VIRUS_SEQ = "virseqs_aa_CATNAP.fasta"
+ASSAY_FILE_PATH = DATA_ROOT + 'assay_CATNAP.txt'
 
-ANTIBODY_LIGHT_CHAIN_SEQ = "light_seqs_aa_CATNAP_ALIGNED.fasta"
-ANTIBODY_HEAVY_CHAIN_SEQ = "heavy_seqs_aa_CATNAP_ALIGNED.fasta"
+VIRUS_SEQ = DATA_ROOT + "virseqs_aa_CATNAP.fasta"
 
-RANDOM_SPLIT = 'random_split_indexes'
+ANTIBODY_LIGHT_CHAIN_SEQ = DATA_ROOT + "light_seqs_aa_CATNAP_ALIGNED.fasta"
+ANTIBODY_HEAVY_CHAIN_SEQ = DATA_ROOT + "heavy_seqs_aa_CATNAP_ALIGNED.fasta"
+
+RANDOM_SPLIT = DATA_ROOT + 'random_split_indexes'

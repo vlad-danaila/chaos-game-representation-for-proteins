@@ -2,9 +2,11 @@ from data.assay_reader import Assay, FilteredAssayReader
 import data.data_split
 from os.path import join
 import constants
+from data.data_split import DatasetSplit, read_random_splits_from_file
+
+DATA = 'data'
 
 def read_data():
-    DATA = 'data'
     assay_filtered_antibodies_reader = FilteredAssayReader(
         join('..', DATA, constants.ASSAY_FILE_PATH),
         join('..', DATA, constants.VIRUS_SEQ),
@@ -14,12 +16,6 @@ def read_data():
     assays = assay_filtered_antibodies_reader.read_file()
     return assays
 
-
-
-
-
-
 if __name__ == '__main__':
     assays = read_data()
-    print('Filtered assays', len(assays))
-    print(assays)
+    dataset_split = read_random_splits_from_file(join('..', DATA, constants.RANDOM_SPLIT))

@@ -8,6 +8,9 @@ class DatasetSplit():
         self.val = val
         self.test = test
 
+    def __repr__(self):
+        return 'train: {} val: {} test: {}'.format(len(self.train), len(self.val), len(self.test))
+
     def serilize(self, file_path):
         with open(file_path, 'w') as file:
             file.write('train\n')
