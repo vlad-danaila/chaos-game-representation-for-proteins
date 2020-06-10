@@ -1,4 +1,4 @@
-from data.assay_reader import Assay, FilteredAssayReader
+from data.assay_reader import FilteredAssayReader
 import random
 import constants
 import numpy as np
