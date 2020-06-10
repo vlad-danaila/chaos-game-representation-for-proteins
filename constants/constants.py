@@ -8,3 +8,5 @@ ANTIBODY_LIGHT_CHAIN_SEQ = DATA_ROOT + "light_seqs_aa_CATNAP_ALIGNED.fasta"
 ANTIBODY_HEAVY_CHAIN_SEQ = DATA_ROOT + "heavy_seqs_aa_CATNAP_ALIGNED.fasta"
 
 RANDOM_SPLIT = DATA_ROOT + 'random_split_indexes'
+
+P_VALUE_TRESHOLD = 0.003

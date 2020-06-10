@@ -2,6 +2,7 @@ from typing import List
 import collections
 import constants
 from data.entity import Assay, AssayMultipleAntibodies, read_antibody_fasta_sequences, read_virus_fasta_sequences
+from scipy.stats import ttest_1samp
 
 def skip_header(file):
     file.readline()
@@ -79,7 +80,7 @@ class FilteredAssayReader(AssayReader):
         self.antibody_heavy_chain_file_path = antibody_heavy_chain_file_path
 
     def read_file(self):
-        assays = []
+        assays_dict = collections.defaultdict(lambda: [])
         virus_seq_dict = read_virus_fasta_sequences(self.virus_seq_file_path)
         antibody_light_seq_dict = read_antibody_fasta_sequences(self.antibody_light_chain_file_path)
         antibody_heavy_seq_dict = read_antibody_fasta_sequences(self.antibody_heavy_chain_file_path)
@@ -90,18 +91,40 @@ class FilteredAssayReader(AssayReader):
                 # skip if there are multiple antibodies in the same assay
                 if '+' in line_split[0]:
                     continue
-                antibody_data = self.find_antibody_data(line_split[0])
+                antibody_id = self.find_antibody_data(line_split[0])
                 virus_id = line_split[1]
                 ic50 = self.find_ic50_from_line_split(line_split)
-                assay = Assay(antibody_data, virus_id, ic50)
+                # assay = Assay(antibody_id, virus_id, ic50)
 
-                is_known_virus_seq = assay.virus_id in virus_seq_dict
-                is_known_antibody_light = assay.antibody_id in antibody_light_seq_dict
-                is_known_antibody_heavy = assay.antibody_id in antibody_heavy_seq_dict
+                is_known_virus_seq = virus_id in virus_seq_dict
+                is_known_antibody_light = antibody_id in antibody_light_seq_dict
+                is_known_antibody_heavy = antibody_id in antibody_heavy_seq_dict
 
                 if is_known_virus_seq and is_known_antibody_light and is_known_antibody_heavy:
-                    assays.append(assay)
+                    assays_dict[(antibody_id, virus_id)].append(ic50)
+
+        assays = []
+        for (antibody_id, virus_id), ic50 in assays_dict.items():
+            assay = self.aggregate_ic50(antibody_id, virus_id, ic50)
+            assays.append(assay)
         return assays
+
+    def aggregate_ic50(self, antibody_id, virus_id, ic50) -> Assay:
+        # if all elements are equal
+        if len(set(ic50)) == 1:
+            return Assay(antibody_id, virus_id, ic50[0])
+        elif len(ic50) == 2:
+            return Assay(antibody_id, virus_id, (ic50[0] + ic50[1]) / 2)
+        elif len(ic50) > 2:
+            included = []
+            for i in range(len(ic50)):
+                ic50_excluded = list(ic50)
+                del ic50_excluded[i]
+                t_stat, p_value_double_tailed = ttest_1samp(ic50_excluded, ic50[i])
+                if p_value_double_tailed > constants.P_VALUE_TRESHOLD:
+                    included.append(ic50[i])
+            m = sum(included) / len(included)
+            return Assay(antibody_id, virus_id, m)
 
 def print_multiple_antibodies_vs_viruses_stats(assays_list: List[AssayMultipleAntibodies], virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict):
     counter_virus_vs_antibody = collections.defaultdict(lambda: 0)
