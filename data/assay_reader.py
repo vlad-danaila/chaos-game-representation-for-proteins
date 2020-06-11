@@ -2,7 +2,9 @@ from typing import List
 import collections
 import constants
 from data.entity import Assay, AssayMultipleAntibodies, read_antibody_fasta_sequences, read_virus_fasta_sequences
-from scipy.stats import ttest_1samp
+from scipy.stats import ttest_1samp, variation
+import math
+import numpy as np
 
 def skip_header(file):
     file.readline()
@@ -104,27 +106,51 @@ class FilteredAssayReader(AssayReader):
 
         assays = []
         for (antibody_id, virus_id), ic50 in assays_dict.items():
-            assay = self.aggregate_ic50(antibody_id, virus_id, ic50)
-            assays.append(assay)
+            try:
+                assay = self.aggregate_ic50(antibody_id, virus_id, ic50)
+                assays.append(assay)
+            except UnstableAssayException:
+                continue
         return assays
 
     def aggregate_ic50(self, antibody_id, virus_id, ic50) -> Assay:
         # if all elements are equal
         if len(set(ic50)) == 1:
+            if constants.EXCLUDE_SINGLE_EXPERIMENTS:
+                raise UnstableAssayException()
             return Assay(antibody_id, virus_id, ic50[0])
         elif len(ic50) == 2:
-            return Assay(antibody_id, virus_id, (ic50[0] + ic50[1]) / 2)
+            mean, scaled_std = self.scaled_std(ic50)
+            if scaled_std > constants.SCALED_STD_TRESHOLD and constants.EXCLUDE_EXPERIMENTS_WIHT_HIGH_VARIANCE:
+                raise UnstableAssayException()
+            return Assay(antibody_id, virus_id, mean)
         elif len(ic50) > 2:
-            included = []
-            # Filter outliers using p value test
-            for i in range(len(ic50)):
-                ic50_excluded = list(ic50)
-                del ic50_excluded[i]
-                t_stat, p_value_double_tailed = ttest_1samp(ic50_excluded, ic50[i])
-                if p_value_double_tailed > constants.P_VALUE_TRESHOLD:
-                    included.append(ic50[i])
-            m = sum(included) / len(included)
-            return Assay(antibody_id, virus_id, m)
+            included = self.filter_outliers_based_on_p_value(ic50)
+            mean, scaled_std = self.scaled_std(included)
+            if scaled_std > constants.SCALED_STD_TRESHOLD and constants.EXCLUDE_EXPERIMENTS_WIHT_HIGH_VARIANCE:
+                raise UnstableAssayException()
+            return Assay(antibody_id, virus_id, mean)
+
+    def scaled_std(self, values):
+        values = np.array(values)
+        mean = values.mean()
+        std = values.std()
+        scaled_std = std / mean
+        return mean, scaled_std
+
+    def filter_outliers_based_on_p_value(self, ic50):
+        included = []
+        # Filter outliers using p value test
+        for i in range(len(ic50)):
+            ic50_excluded = list(ic50)
+            del ic50_excluded[i]
+            t_stat, p_value_double_tailed = ttest_1samp(ic50_excluded, ic50[i])
+            if p_value_double_tailed > constants.P_VALUE_TRESHOLD:
+                included.append(ic50[i])
+        return included
+
+class UnstableAssayException(Exception):
+    pass
 
 def print_multiple_antibodies_vs_viruses_stats(assays_list: List[AssayMultipleAntibodies], virus_seq_dict, antibody_heavy_seq_dict, antibody_light_seq_dict):
     counter_virus_vs_antibody = collections.defaultdict(lambda: 0)
