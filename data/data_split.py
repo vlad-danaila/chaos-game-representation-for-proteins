@@ -81,9 +81,10 @@ def read_data_by_serialized_random_split():
     return read_data_by_split(dataset_split)
 
 if __name__ == '__main__':
-    # dataset_split = get_random_splits(82988, 0.8, 0.1, 0.1)
+    # assays = read_data()
+    # dataset_split = get_random_splits(len(assays), 0.8, 0.1, 0.1)
     # dataset_split.serilize(constants.RANDOM_SPLIT)
 
     dataset_split = read_random_splits_from_file(constants.RANDOM_SPLIT)
-
     train_assays, val_assays, test_assays = read_data_by_split(dataset_split)
+    print(len(train_assays), len(val_assays), len(test_assays))
