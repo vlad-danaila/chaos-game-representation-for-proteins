@@ -31,9 +31,16 @@ class AssayReader():
             raise Exception('Does not support multiple antibody ids.')
         return antibodys_as_text
 
-    # TODO
     def read_interval(self, value: str):
-        pass
+        try:
+            if value.startswith('>'):
+                return (float(value[1:]), math.inf)
+            elif value.startswith('<'):
+                return (0, float(value[1:]))
+            else:
+                return (float(value), float(value))
+        except ValueError:
+            return None
 
     def read_file(self):
         assays_dict = collections.defaultdict(lambda: [])
@@ -52,9 +59,9 @@ class AssayReader():
                     continue
                 antibody_id = self.find_antibody_data(line_split[0])
                 virus_id = line_split[1]
-                ic50 = line_split[-3]
-                ic80 = line_split[-2]
-                id50 = line_split[-1]
+                ic50 = self.read_interval(line_split[-3])
+                ic80 = self.read_interval(line_split[-2])
+                id50 = self.read_interval(line_split[-1])
                 print(ic50, ic80, id50, line_split)
 
 
