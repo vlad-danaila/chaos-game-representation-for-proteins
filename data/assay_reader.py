@@ -90,6 +90,9 @@ class FilteredAssayReader(AssayReader):
             skip_header(file)
             for line in file:
                 line_split = line.split()
+                # keep only fixed values, exclude open intervals
+                if '>' in line or '<' in line:
+                    continue
                 # skip if there are multiple antibodies in the same assay
                 if '+' in line_split[0]:
                     continue
