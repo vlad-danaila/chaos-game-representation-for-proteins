@@ -78,17 +78,38 @@ class AssayReader():
                     assays_dict[(antibody_id, virus_id)].append((ic50, ic80))
 
         ic50, ic80 = p.empty(), p.empty()
+        count_ic50 = 0
+        count_ic80 = 0
+        total = 0
         count = 0
         for key in assays_dict:
             # print(assays_dict[key])
             for value in assays_dict[key]:
-                ic50 = ic50 | value[0]
-                ic80 = ic80 | value[1]
-            print(count)
+                total += 1
+                # if p.singleton(49.99999) < value[0] or p.singleton(49.99999) > value[0]\
+                #     or p.singleton(9.99999) < value[0] or p.singleton(9.99999) > value[0]\
+                #         or p.singleton(0.99999) < value[0] or p.singleton(0.99999) > value[0]:
+                #     count_ic50 += 1
+                if p.singleton(0.99999) < value[0] or p.singleton(0.99999) > value[0]:
+                    count_ic50 += 1
+                else:
+                    print(value[0])
+                    continue
+                if p.singleton(49.99999) < value[1] or p.singleton(49.99999) > value[1] \
+                        or p.singleton(9.99999) < value[1] or p.singleton(9.99999) > value[1] \
+                        or p.singleton(0.99999) < value[1] or p.singleton(0.99999) > value[1]:
+                    count_ic80 += 1
+
+                # ic50 = ic50 | value[0]
+                # ic80 = ic80 | value[1]
+            # print(count)
             count += 1
 
-        print(ic50)
-        print(ic80)
+        print('---------------------------')
+        print(total)
+        print(count_ic50)
+        print(count_ic80)
+
 
 
         # assays = []
