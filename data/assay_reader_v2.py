@@ -95,3 +95,6 @@ if __name__ == '__main__':
     assay_reader = AssayReader(
         constants.ASSAY_FILE_PATH, constants.VIRUS_SEQ, constants.ANTIBODY_LIGHT_CHAIN_SEQ, constants.ANTIBODY_HEAVY_CHAIN_SEQ)
     assays = assay_reader.read_file()
+
+# Problematic example
+# ('VRC34.01', '25710_2_43') {'ic50': [[50.0,+inf), [3.09], [0.128]], 'ic80': [[50.0,+inf), [100.0,+inf), [6.22]]})
