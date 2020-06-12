@@ -12,7 +12,7 @@ def skip_header(file):
 
 class Assay():
 
-    def __init__(self, antibody: str, virus: str, ic50: Tuple[int, int], ic80: Tuple[int, int]):
+    def __init__(self, antibody: str, virus: str, ic50: List[p.interval.Interval], ic80: List[p.interval.Interval]):
         self.virus = virus
         self.antibody = antibody
         self.ic50 = ic50
@@ -34,20 +34,20 @@ class AssayReader():
     def read_interval(self, value: str):
         try:
             if value.startswith('>'):
-                # return (float(value[1:]), math.inf)
                 return p.closedopen(float(value[1:]), p.inf)
             elif value.startswith('<'):
-                # return (0, float(value[1:]))
                 return p.closed(0, float(value[1:]))
             else:
-                # return (float(value), float(value))
                 return p.singleton(float(value))
         except ValueError:
-            # return None
             return p.empty()
 
     def read_file(self):
-        assays_dict = collections.defaultdict(lambda: [])
+        # A dict of dicts of lists, first level is virus/antibody pair,
+        # second level is ic50, ic80, and the last level are lists of experiments values
+        assays_dict = collections.defaultdict(
+            lambda: collections.defaultdict(lambda: [])
+        )
 
         virus_seq_dict = read_virus_fasta_sequences(self.virus_seq_file_path)
         antibody_light_seq_dict = read_antibody_fasta_sequences(self.antibody_light_chain_file_path)
@@ -75,52 +75,17 @@ class AssayReader():
                 is_known_antibody_heavy = antibody_id in antibody_heavy_seq_dict
 
                 if is_known_virus_seq and is_known_antibody_light and is_known_antibody_heavy:
-                    assays_dict[(antibody_id, virus_id)].append((ic50, ic80))
+                    if ic50 != p.empty():
+                        assays_dict[(antibody_id, virus_id)]['ic50'].append(ic50)
+                    if ic80 != p.empty():
+                        assays_dict[(antibody_id, virus_id)]['ic80'].append(ic80)
 
-        ic50, ic80 = p.empty(), p.empty()
-        count_ic50 = 0
-        count_ic80 = 0
-        total = 0
-        count = 0
+        assays = []
         for key in assays_dict:
-            # print(assays_dict[key])
-            for value in assays_dict[key]:
-                total += 1
-                # if p.singleton(49.99999) < value[0] or p.singleton(49.99999) > value[0]\
-                #     or p.singleton(9.99999) < value[0] or p.singleton(9.99999) > value[0]\
-                #         or p.singleton(0.99999) < value[0] or p.singleton(0.99999) > value[0]:
-                #     count_ic50 += 1
-                if p.singleton(0.99999) < value[0] or p.singleton(0.99999) > value[0]:
-                    count_ic50 += 1
-                else:
-                    print(value[0])
-                    continue
-                if p.singleton(49.99999) < value[1] or p.singleton(49.99999) > value[1] \
-                        or p.singleton(9.99999) < value[1] or p.singleton(9.99999) > value[1] \
-                        or p.singleton(0.99999) < value[1] or p.singleton(0.99999) > value[1]:
-                    count_ic80 += 1
+            print(key, assays_dict[key])
+            # antibody_id, virus_id = key
 
-                # ic50 = ic50 | value[0]
-                # ic80 = ic80 | value[1]
-            # print(count)
-            count += 1
-
-        print('---------------------------')
-        print(total)
-        print(count_ic50)
-        print(count_ic80)
-
-
-
-        # assays = []
-        # for (antibody_id, virus_id), ic50 in assays_dict.items():
-        #     try:
-        #         assay = self.aggregate_ic50(antibody_id, virus_id, ic50)
-        #         assays.append(assay)
-        #     except UnstableAssayException:
-        #         continue
-        # return assays
-
+        #     print(antibody_id, virus_id, assays_dict[key])
 
 
 class UnstableAssayException(Exception):
@@ -130,6 +95,3 @@ if __name__ == '__main__':
     assay_reader = AssayReader(
         constants.ASSAY_FILE_PATH, constants.VIRUS_SEQ, constants.ANTIBODY_LIGHT_CHAIN_SEQ, constants.ANTIBODY_HEAVY_CHAIN_SEQ)
     assays = assay_reader.read_file()
-
-# [((50.0, inf), None, None), ((46.0, 46.0), None, None)]
-# [((18.1, 18.1), None, None), ((4.7, 4.7), None, None)]
