@@ -84,3 +84,8 @@ if __name__ == '__main__':
 
     print('fianl', abs_err_mean)
     print('len', len(test_assays))
+
+# TODO compute intersection over union and mean squared error and R2
+# TODO compute simultaneously for k = 1, 3, 5, 10, 30, 50, 100, 300, 500, 1000
+# TODO time it again
+# TODO checkpointing
