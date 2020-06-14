@@ -1,10 +1,7 @@
-from typing import Tuple, List
+from typing import List
 import collections
 import constants
 from data.entity import read_antibody_fasta_sequences, read_virus_fasta_sequences
-from scipy.stats import ttest_1samp, variation
-import math
-import numpy as np
 import portion as p
 
 def skip_header(file):
@@ -12,11 +9,14 @@ def skip_header(file):
 
 class Assay():
 
-    def __init__(self, antibody: str, virus: str, ic50: List[p.interval.Interval], ic80: List[p.interval.Interval]):
-        self.virus = virus
+    def __init__(self, antibody: str, virus: str, ic50: List[p.interval.Interval] = None, ic80: List[p.interval.Interval] = None):
         self.antibody = antibody
+        self.virus = virus
         self.ic50 = ic50
         self.ic80 = ic80
+
+    def __repr__(self):
+        return '[antibody/virus=[{}/{}] ic50={} ic80={}]'.format(self.antibody, self.virus, self.ic50, self.ic80)
 
 class AssayReader():
 
@@ -82,19 +82,22 @@ class AssayReader():
 
         assays = []
         for key in assays_dict:
-            print(key, assays_dict[key])
-            # antibody_id, virus_id = key
+            antibody_id, virus_id = key
+            assay = Assay(antibody_id, virus_id)
+            if 'ic50' in assays_dict[key]:
+                assay.ic50 = assays_dict[key]['ic50']
+            if 'ic80' in assays_dict[key]:
+                assay.ic80 = assays_dict[key]['ic80']
+            assays.append(assay)
 
-        #     print(antibody_id, virus_id, assays_dict[key])
-
-
-class UnstableAssayException(Exception):
-    pass
+        return assays
 
 if __name__ == '__main__':
     assay_reader = AssayReader(
         constants.ASSAY_FILE_PATH, constants.VIRUS_SEQ, constants.ANTIBODY_LIGHT_CHAIN_SEQ, constants.ANTIBODY_HEAVY_CHAIN_SEQ)
     assays = assay_reader.read_file()
+
+    print(len(assays))
 
 # Problematic example
 # ('VRC34.01', '25710_2_43') {'ic50': [[50.0,+inf), [3.09], [0.128]], 'ic80': [[50.0,+inf), [100.0,+inf), [6.22]]})
