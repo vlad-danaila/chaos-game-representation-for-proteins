@@ -1,4 +1,4 @@
-from data.assay_reader import FilteredAssayReader
+from data.assay_reader import AssayReader
 import random
 import constants
 import numpy as np
@@ -57,7 +57,7 @@ def read_random_splits_from_file(file_path):
         return DatasetSplit(train_indexes, val_indexes, test_indexes)
 
 def read_data():
-    assay_filtered_antibodies_reader = FilteredAssayReader(
+    assay_filtered_antibodies_reader = AssayReader(
         curent_folder() + constants.ASSAY_FILE_PATH,
         curent_folder() + constants.VIRUS_SEQ,
         curent_folder() + constants.ANTIBODY_LIGHT_CHAIN_SEQ,

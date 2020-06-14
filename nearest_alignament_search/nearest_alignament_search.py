@@ -54,7 +54,6 @@ def compute_distances(assays: List[Assay], compared_assay: Assay):
 
     sort_indexes = np.argsort(distances)
 
-    # TODO aggregate multiple records of the same virus and antibody combination. Carefull not to leak data into validation or testing.
     for i in range(20):
         print(distances[sort_indexes[i]])
         print(assays[sort_indexes[i]])
