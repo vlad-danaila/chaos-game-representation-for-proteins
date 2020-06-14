@@ -6,6 +6,12 @@ from scipy.stats import ttest_1samp, variation
 import math
 import numpy as np
 
+P_VALUE_TRESHOLD = 0.003
+SCALED_STD_TRESHOLD = 0.01
+
+EXCLUDE_SINGLE_EXPERIMENTS = False
+EXCLUDE_EXPERIMENTS_WIHT_HIGH_VARIANCE = True
+
 class AssayMultipleAntibodies():
 
     def __init__(self, antibody_ids, virus_id, ic50):

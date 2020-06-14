@@ -53,6 +53,35 @@ class Assay():
     def virus_seq(self):
         return VIRUS_SEQ_DICT[self.virus]
 
+    def interval_enclosure(self, measurements: List[p.Interval]):
+        if measurements == None or len(measurements) == 0:
+            return None
+        union: p.interval.Interval = measurements[0]
+        for i in range(1, len(measurements)):
+            union = union | measurements[i]
+        return union.enclosure
+
+    def ic50_interval_enclosure(self):
+        return self.interval_enclosure(self.ic50)
+
+    def ic80_interval_enclosure(self):
+        return self.interval_enclosure(self.ic80)
+
+    def interval_center_and_spread(self, interval_list: List[p.Interval]):
+        interval = self.interval_enclosure(interval_list)
+        if interval == None or interval == p.empty():
+            return None
+        low, high = interval.lower, min(interval.upper, constants.INTERVALS_UPPER_BOUND)
+        center = (low + high) / 2
+        spread = high - center
+        return center, spread
+
+    def ic50_center_and_spread(self):
+        return self.interval_center_and_spread(self.ic50)
+
+    def ic80_center_and_spread(self):
+        return self.interval_center_and_spread(self.ic80)
+
 class AssayReader():
 
     def __init__(self, assay_file_path, virus_seq_file_path, antibody_light_chain_file_path, antibody_heavy_chain_file_path):

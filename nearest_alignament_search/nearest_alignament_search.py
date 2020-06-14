@@ -24,7 +24,7 @@ def assay_distance(assay_1: Assay, assay_2: Assay):
 
     return virus_seq_diff, antibody_lignt_seq_diff, antibody_heavy_seq_diff
 
-def compute_distances(assays: List[Assay], compared_assay: Assay):
+def compute_distances(assays: List[Assay], compared_assay: Assay, k_neibhours: int):
     total_virus_diff, total_antoibody_light_diff, total_antoibody_heavy_diff = 0, 0, 0
     virus_diffs, antib_light_diffs, antib_heavy_diffs = [], [], []
 
@@ -54,7 +54,7 @@ def compute_distances(assays: List[Assay], compared_assay: Assay):
 
     sort_indexes = np.argsort(distances)
 
-    for i in range(20):
+    for i in range(k_neibhours):
         print(distances[sort_indexes[i]])
         print(assays[sort_indexes[i]])
 
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     train_assays, val_assays, test_assays = read_data_by_serialized_random_split()
     counter = 1
     for test_assay in test_assays:
-        compute_distances(train_assays, test_assay)
+        compute_distances(train_assays, test_assay, 5)
         break
         print('Processed', counter / len(test_assays), '%')
         counter += 1
