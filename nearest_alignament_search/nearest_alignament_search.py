@@ -2,6 +2,8 @@ from data.data_split import read_data_by_serialized_random_split
 from data.assay_reader import Assay
 from typing import List
 import numpy as np
+import constants
+from util.timer import timer_start, timer_end
 
 def assay_distance(assay_1: Assay, assay_2: Assay):
     virus_seq_1, virus_seq_2 = assay_1.virus_seq(), assay_2.virus_seq()
@@ -55,7 +57,7 @@ def compute_distances(assays: List[Assay], compared_assay: Assay, k_neibhours: i
     sort_indexes = np.argsort(distances)
 
     total_weighted_intervals, total_weights = np.zeros(2), np.zeros(2)
-    print(total_weighted_intervals, total_weights)
+
     for i in range(k_neibhours):
         sort_index = sort_indexes[i]
         dist = distances[sort_index]
@@ -64,17 +66,21 @@ def compute_distances(assays: List[Assay], compared_assay: Assay, k_neibhours: i
         interval = assay.ic50_center_and_spread()
         total_weighted_intervals += dist_weight * interval
         total_weights += dist_weight
-        print(dist_weight, interval[0], interval[1], assay)
 
     return total_weighted_intervals / total_weights
 
 if __name__ == '__main__':
     train_assays, val_assays, test_assays = read_data_by_serialized_random_split()
-    counter = 1
-    for test_assay in test_assays:
-        nebhour_interval = compute_distances(train_assays, test_assay, 10)
-        print(nebhour_interval)
-        print(test_assay.ic50_center_and_spread())
-        break
-        print('Processed', counter / len(test_assays), '%')
-        counter += 1
+    abs_err_total = np.zeros(2)
+    for i in range(len(test_assays)):
+        test_assay = test_assays[i]
+        nebhour_interval = compute_distances(train_assays, test_assay, constants.K_NEIBHOURS)
+        abs_err = np.abs(nebhour_interval - test_assay.ic50_center_and_spread())
+        abs_err_total += abs_err
+        print('Processed', i / len(test_assays), '%')
+        if i == 2:
+            break
+    abs_err_mean = abs_err_total / len(test_assays)
+
+    print('fianl', abs_err_mean)
+    print('len', len(test_assays))

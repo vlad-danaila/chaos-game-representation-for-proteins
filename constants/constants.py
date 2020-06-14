@@ -11,3 +11,5 @@ RANDOM_SPLIT = DATA_ROOT + 'random_split_indexes'
 
 INTERVALS_UPPER_BOUND = 150
 
+K_NEIBHOURS = 10
+
