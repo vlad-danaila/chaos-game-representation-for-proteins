@@ -54,26 +54,26 @@ def compute_distances(assays: List[Assay], compared_assay: Assay, k_neibhours: i
 
     sort_indexes = np.argsort(distances)
 
-    total_weighted_centers, total_weighted_spreads, total_weights = 0, 0, 0
+    total_weighted_intervals, total_weights = np.zeros(2), np.zeros(2)
+    print(total_weighted_intervals, total_weights)
     for i in range(k_neibhours):
         sort_index = sort_indexes[i]
         dist = distances[sort_index]
         dist_weight = 1 / dist
         assay = assays[sort_index]
-        center, spread = assay.ic50_center_and_spread()
-        total_weighted_centers += dist_weight * center
-        total_weighted_spreads += dist_weight * spread
+        interval = assay.ic50_center_and_spread()
+        total_weighted_intervals += dist_weight * interval
         total_weights += dist_weight
-        print(dist_weight, center, spread, assay)
+        print(dist_weight, interval[0], interval[1], assay)
 
-    return total_weighted_centers / total_weights, total_weighted_spreads / total_weights
+    return total_weighted_intervals / total_weights
 
 if __name__ == '__main__':
     train_assays, val_assays, test_assays = read_data_by_serialized_random_split()
     counter = 1
     for test_assay in test_assays:
-        nebhour_center, neibhour_spread = compute_distances(train_assays, test_assay, 100)
-        print(nebhour_center, neibhour_spread)
+        nebhour_interval = compute_distances(train_assays, test_assay, 10)
+        print(nebhour_interval)
         print(test_assay.ic50_center_and_spread())
         break
         print('Processed', counter / len(test_assays), '%')

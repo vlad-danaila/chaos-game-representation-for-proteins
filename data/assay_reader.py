@@ -4,6 +4,7 @@ import portion as p
 import constants
 from Bio import SeqIO
 import os.path
+import numpy as np
 
 def skip_header(file):
     file.readline()
@@ -74,7 +75,7 @@ class Assay():
         low, high = interval.lower, min(interval.upper, constants.INTERVALS_UPPER_BOUND)
         center = (low + high) / 2
         spread = high - center
-        return center, spread
+        return np.array([center, spread])
 
     def ic50_center_and_spread(self):
         return self._interval_center_and_spread(self.ic50)
