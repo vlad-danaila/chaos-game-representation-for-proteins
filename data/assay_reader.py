@@ -53,7 +53,7 @@ class Assay():
     def virus_seq(self):
         return VIRUS_SEQ_DICT[self.virus]
 
-    def interval_enclosure(self, measurements: List[p.Interval]):
+    def _interval_enclosure(self, measurements: List[p.Interval]):
         if measurements == None or len(measurements) == 0:
             return None
         union: p.interval.Interval = measurements[0]
@@ -61,14 +61,14 @@ class Assay():
             union = union | measurements[i]
         return union.enclosure
 
-    def ic50_interval_enclosure(self):
-        return self.interval_enclosure(self.ic50)
+    def _ic50_interval_enclosure(self):
+        return self._interval_enclosure(self.ic50)
 
-    def ic80_interval_enclosure(self):
-        return self.interval_enclosure(self.ic80)
+    def _ic80_interval_enclosure(self):
+        return self._interval_enclosure(self.ic80)
 
-    def interval_center_and_spread(self, interval_list: List[p.Interval]):
-        interval = self.interval_enclosure(interval_list)
+    def _interval_center_and_spread(self, interval_list: List[p.Interval]):
+        interval = self._interval_enclosure(interval_list)
         if interval == None or interval == p.empty():
             return None
         low, high = interval.lower, min(interval.upper, constants.INTERVALS_UPPER_BOUND)
@@ -77,10 +77,10 @@ class Assay():
         return center, spread
 
     def ic50_center_and_spread(self):
-        return self.interval_center_and_spread(self.ic50)
+        return self._interval_center_and_spread(self.ic50)
 
     def ic80_center_and_spread(self):
-        return self.interval_center_and_spread(self.ic80)
+        return self._interval_center_and_spread(self.ic80)
 
 class AssayReader():
 
