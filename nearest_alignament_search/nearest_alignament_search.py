@@ -4,6 +4,7 @@ from typing import List
 import numpy as np
 import constants
 from util.timer import timer_start, timer_end
+from util.intervals import iou
 
 def assay_distance(assay_1: Assay, assay_2: Assay):
     virus_seq_1, virus_seq_2 = assay_1.virus_seq(), assay_2.virus_seq()
@@ -26,7 +27,7 @@ def assay_distance(assay_1: Assay, assay_2: Assay):
 
     return virus_seq_diff, antibody_lignt_seq_diff, antibody_heavy_seq_diff
 
-def compute_distances(assays: List[Assay], compared_assay: Assay, k_neibhours: int):
+def k_neibhours(assays: List[Assay], compared_assay: Assay, k_neibhours: int):
     total_virus_diff, total_antoibody_light_diff, total_antoibody_heavy_diff = 0, 0, 0
     virus_diffs, antib_light_diffs, antib_heavy_diffs = [], [], []
 
@@ -72,20 +73,29 @@ def compute_distances(assays: List[Assay], compared_assay: Assay, k_neibhours: i
 if __name__ == '__main__':
     train_assays, val_assays, test_assays = read_data_by_serialized_random_split()
     abs_err_total = np.zeros(2)
+    squared_err_total = np.zeros(2)
+    iou_total = 0
     for i in range(len(test_assays)):
         test_assay = test_assays[i]
-        nebhour_interval = compute_distances(train_assays, test_assay, constants.K_NEIBHOURS)
-        abs_err = np.abs(nebhour_interval - test_assay.ic50_center_and_spread())
+        nebhour_interval = k_neibhours(train_assays, test_assay, constants.K_NEIBHOURS)
+        expected = test_assay.ic50_center_and_spread()
+        abs_err = np.abs(nebhour_interval - expected)
         abs_err_total += abs_err
+        squared_err_total += (abs_err ** 2)
+        iou_total += iou(nebhour_interval, expected)
         print('Processed', i / len(test_assays), '%')
         if i == 2:
             break
     abs_err_mean = abs_err_total / len(test_assays)
+    squared_err_mean = squared_err_total / len(test_assays)
+    iou_mean = iou_total / len(test_assays)
 
-    print('fianl', abs_err_mean)
+    print('fianl', abs_err_mean, squared_err_mean, iou_mean)
     print('len', len(test_assays))
 
-# TODO compute intersection over union and mean squared error and R2
+
+
+# TODO compute and R2
 # TODO compute simultaneously for k = 1, 3, 5, 10, 30, 50, 100, 300, 500, 1000
 # TODO time it again
 # TODO checkpointing
