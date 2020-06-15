@@ -5,6 +5,7 @@ import numpy as np
 import constants
 from util.timer import timer_start, timer_end
 from util.intervals import iou
+from util.assays import assays_intervals_mean
 
 def assay_distance(assay_1: Assay, assay_2: Assay):
     virus_seq_1, virus_seq_2 = assay_1.virus_seq(), assay_2.virus_seq()
@@ -72,9 +73,11 @@ def k_neibhours(assays: List[Assay], compared_assay: Assay, k_neibhours: int):
 
 if __name__ == '__main__':
     train_assays, val_assays, test_assays = read_data_by_serialized_random_split()
+    global_mean = assays_intervals_mean(test_assays)
     abs_err_total = np.zeros(2)
     squared_err_total = np.zeros(2)
     iou_total = 0
+    total_sum_squares = np.zeros(2)
     for i in range(len(test_assays)):
         test_assay = test_assays[i]
         nebhour_interval = k_neibhours(train_assays, test_assay, constants.K_NEIBHOURS)
@@ -83,19 +86,19 @@ if __name__ == '__main__':
         abs_err_total += abs_err
         squared_err_total += (abs_err ** 2)
         iou_total += iou(nebhour_interval, expected)
+        total_sum_squares += ((expected - global_mean) ** 2)
         print('Processed', i / len(test_assays), '%')
         if i == 2:
             break
     abs_err_mean = abs_err_total / len(test_assays)
     squared_err_mean = squared_err_total / len(test_assays)
     iou_mean = iou_total / len(test_assays)
-
-    print('fianl', abs_err_mean, squared_err_mean, iou_mean)
+    r_squared = 1 - (squared_err_total / total_sum_squares)
+    print('fianl', abs_err_mean, squared_err_mean, iou_mean, r_squared)
     print('len', len(test_assays))
 
-
-
-# TODO compute and R2
 # TODO compute simultaneously for k = 1, 3, 5, 10, 30, 50, 100, 300, 500, 1000
+# TODO calc pt ic80
+# TODO calc pt tobit / truncat la 150 cu spread pana la 100 sau pana la 50
 # TODO time it again
 # TODO checkpointing
