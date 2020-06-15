@@ -7,6 +7,7 @@ from util.timer import timer_start, timer_end
 from util.intervals import iou
 from util.assays import assays_intervals_mean
 
+
 def assay_distance(assay_1: Assay, assay_2: Assay):
     virus_seq_1, virus_seq_2 = assay_1.virus_seq(), assay_2.virus_seq()
     antibody_light_1, antibody_light_2 = assay_1.antibody_light_seq(), assay_2.antibody_light_seq()
