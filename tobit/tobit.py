@@ -103,18 +103,23 @@ def cdf_aproximation_4(x: t.Tensor):
     y = sqrt(2/pi) * x * (1 + 0.044715 * x.pow(2))
     return .5 * (1 + tanh(y))
 
+def cdf_aprox_combined(x: t.Tensor):
+    r = .02
+    return r * cdf_aproximation_1(x) + (1 - r) * cdf_aproximation_4(x)
+
 def tanh(x: t.Tensor):
     return (t.exp(x) - t.exp(-x)) / (t.exp(x) + t.exp(-x))
 
 def cdf_aprox_plot():
     x = np.linspace(-4, 4, 1000)
+    plt.plot(x, norm.cdf(x))
+    plt.plot(x, cdf_aproximation_4(t.tensor(x, dtype=t.float64)))
+    plt.show()
 
+def log_cdf_derivative_plot():
+    x = np.linspace(-6, 6, 1000)
     plt.plot(x, norm.pdf(x)/norm.cdf(x))
-    plt.plot(x, norm.pdf(x) / cdf_aproximation_4(t.tensor(x, dtype=float)))
-
-    # plt.plot(x, norm.cdf(x))
-    # plt.plot(x, cdf_aproximation_4(t.tensor(x, dtype=t.float64)))
-
+    plt.plot(x, norm.pdf(x) / cdf_aprox_combined(t.tensor(x, dtype=float)))
     plt.show()
 
 if __name__ == '__main__':
@@ -124,9 +129,9 @@ if __name__ == '__main__':
 
     # gausian_curves_1()
     # cdf_aprox_plot()
+    log_cdf_derivative_plot()
 
-    tensor = t.tensor([0, 100, 100, 100, 100, 100, 100], dtype=t.float)
-    single_val_mean, single_val_std = tensor.mean(), tensor.std(unbiased=False)
-    tensor = (tensor - single_val_mean) / single_val_std
-    print(tensor)
-    cdf_aprox_plot()
+    # tensor = t.tensor([0, 100, 100, 100, 100, 100, 100], dtype=t.float)
+    # single_val_mean, single_val_std = tensor.mean(), tensor.std(unbiased=False)
+    # tensor = (tensor - single_val_mean) / single_val_std
+    # print(tensor)
