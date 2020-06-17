@@ -5,7 +5,9 @@ from typing import List
 import constants
 import math
 from scipy.stats import norm
+import numpy as np
 import matplotlib.pyplot as plt
+from math import sqrt, pi
 
 def pdf(n):
     return ( 1 / math.sqrt(2 * math.pi) ) * t.exp( (-1/2) * (n ** 2) )
@@ -70,7 +72,61 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
     mean, std = delta / gamma, gamma ** -2
     return mean + single_val_mean, std * single_val_std
 
+def gausian_curves_1():
+    ic50 = [ p.singleton(30), p.singleton(30), p.singleton(50) ]
+    mean, std = norm.fit(read_tensors_from_assay_intervals(ic50))
+    x = np.linspace(mean - 3 * std, mean + 3 * std, 100)
+    plt.plot(x, norm.pdf(x, mean, std))
+    # plt.plot(x, norm.cdf(x, mean, std))
+
+    ic50 = [ p.singleton(30), p.singleton(30), p.singleton(60) ]
+    mean, std = norm.fit(read_tensors_from_assay_intervals(ic50))
+    x = np.linspace(mean - 3 * std, mean + 3 * std, 100)
+    plt.plot(x, norm.pdf(x, mean, std))
+    # plt.plot(x, norm.cdf(x, mean, std))
+
+    ic50 = [ p.singleton(30), p.singleton(30), p.singleton(70) ]
+    mean, std = norm.fit(read_tensors_from_assay_intervals(ic50))
+    x = np.linspace(mean - 3 * std, mean + 3 * std, 100)
+    plt.plot(x, norm.pdf(x, mean, std))
+    # plt.plot(x, norm.cdf(x, mean, std))
+
+    plt.show()
+
+# http://www.hrpub.org/download/20140305/MS7-13401470.pdf
+def cdf_aproximation_1(x):
+    k = sqrt(2 / pi)
+    return t.exp(2 * k * x) / (1 + t.exp(2 * k * x))
+
+# http://www.hrpub.org/download/20140305/MS7-13401470.pdf
+def cdf_aproximation_4(x: t.Tensor):
+    y = sqrt(2/pi) * x * (1 + 0.044715 * x.pow(2))
+    return .5 * (1 + tanh(y))
+
+def tanh(x: t.Tensor):
+    return (t.exp(x) - t.exp(-x)) / (t.exp(x) + t.exp(-x))
+
+def cdf_aprox_plot():
+    x = np.linspace(-4, 4, 1000)
+
+    plt.plot(x, norm.pdf(x)/norm.cdf(x))
+    plt.plot(x, norm.pdf(x) / cdf_aproximation_4(t.tensor(x, dtype=float)))
+
+    # plt.plot(x, norm.cdf(x))
+    # plt.plot(x, cdf_aproximation_4(t.tensor(x, dtype=t.float64)))
+
+    plt.show()
+
 if __name__ == '__main__':
-    assay = Assay('', '', [ p.singleton(150), p.singleton(100), p.singleton(150) ], None)
-    print(tobit_mean_and_variance_reparametrization(assay.ic50))
-    print('Expected', norm.fit(read_tensors_from_assay_intervals(assay.ic50)))
+    # assay = Assay('', '', [ p.singleton(150), p.singleton(100), p.singleton(150) ], None)
+    # print(tobit_mean_and_variance_reparametrization(assay.ic50))
+    # print('Expected', norm.fit(read_tensors_from_assay_intervals(assay.ic50)))
+
+    # gausian_curves_1()
+    # cdf_aprox_plot()
+
+    tensor = t.tensor([0, 100, 100, 100, 100, 100, 100], dtype=t.float)
+    single_val_mean, single_val_std = tensor.mean(), tensor.std(unbiased=False)
+    tensor = (tensor - single_val_mean) / single_val_std
+    print(tensor)
+    cdf_aprox_plot()
