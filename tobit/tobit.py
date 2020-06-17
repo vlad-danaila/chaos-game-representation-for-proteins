@@ -103,8 +103,13 @@ def cdf_aproximation_4(x: t.Tensor):
     y = sqrt(2/pi) * x * (1 + 0.044715 * x.pow(2))
     return .5 * (1 + tanh(y))
 
+# http://www.hrpub.org/download/20140305/MS7-13401470.pdf
+def cdf_aproximation_5(x: t.Tensor):
+    y = 0.806 * x * (1-0.018 * x)
+    return .5 * (1 - t.sqrt(1 - t.exp(-y.pow(2))))
+
 def cdf_aprox_combined(x: t.Tensor):
-    r = .02
+    r = .015
     return r * cdf_aproximation_1(x) + (1 - r) * cdf_aproximation_4(x)
 
 def tanh(x: t.Tensor):
@@ -113,7 +118,7 @@ def tanh(x: t.Tensor):
 def cdf_aprox_plot():
     x = np.linspace(-4, 4, 1000)
     plt.plot(x, norm.cdf(x))
-    plt.plot(x, cdf_aproximation_4(t.tensor(x, dtype=t.float64)))
+    plt.plot(x, cdf_aprox_combined(t.tensor(x, dtype=t.float64)))
     plt.show()
 
 def log_cdf_derivative_plot():
