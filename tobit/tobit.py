@@ -13,6 +13,9 @@ def pdf(n):
 def negative_log_likelihood(y, mean, std):
     return -t.sum(t.log((1 / std) * (pdf((y - mean) / std))))
 
+def negative_log_likelihood_reparametized(y, delta, gamma):
+    return -t.sum(t.log(gamma) + t.log(pdf(gamma * y - delta)))
+
 def read_tensors_from_assay_intervals(intervals: List[p.interval.Interval]):
     single_valued = []
     for interval in intervals:
@@ -44,7 +47,30 @@ def tobit_mean_and_variance(intervals: List[p.interval.Interval]):
     print(i)
     return mean + single_val_mean, std * single_val_std
 
+def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interval]):
+    single_val_tensors = read_tensors_from_assay_intervals(intervals)
+    single_val_mean, single_val_std = single_val_tensors.mean(), single_val_tensors.std(unbiased = False)
+    single_val_tensors = (single_val_tensors - single_val_mean) / single_val_std
+    delta, gamma = t.tensor(0, dtype=float, requires_grad=True), t.tensor(1, dtype=float, requires_grad=True)
+    optimizer = t.optim.SGD([delta, gamma], lr=1e-4)
+    patience = 5
+    for i in range(100_000):
+        prev_delta, prev_gamma = delta.clone(), gamma.clone()
+        optimizer.zero_grad()
+        log_likelihood = negative_log_likelihood_reparametized(single_val_tensors, delta, gamma)
+        log_likelihood.backward()
+        optimizer.step()
+        early_stop = math.fabs(delta - prev_delta) + math.fabs(gamma - prev_gamma) < 1e-8
+        if early_stop:
+            patience -= 1
+            if patience == 0:
+                break
+        else:
+            patience = 5
+    mean, std = delta / gamma, gamma ** -2
+    return mean + single_val_mean, std * single_val_std
+
 if __name__ == '__main__':
     assay = Assay('', '', [ p.singleton(150), p.singleton(100), p.singleton(150) ], None)
-    print(tobit_mean_and_variance(assay.ic50))
+    print(tobit_mean_and_variance_reparametrization(assay.ic50))
     print('Expected', norm.fit(read_tensors_from_assay_intervals(assay.ic50)))
