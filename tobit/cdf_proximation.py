@@ -30,6 +30,9 @@ def cdf_aproximation_5(x: t.Tensor):
     y = 0.806 * x * (1 - 0.018 * x)
     return .5 * (1 - t.sqrt(1 - t.exp(-y.pow(2))))
 
+def softplus_aproximation_of_log_cdf(x: t.Tensor) -> t.Tensor:
+    return -(1/0.1) * t.log(1 + t.exp(0.7 * x - 2))
+
 def cdf_aprox_combined(x: t.Tensor):
     r = .015
     return r * cdf_aproximation_1(x) + (1 - r) * cdf_aproximation_4(x)
