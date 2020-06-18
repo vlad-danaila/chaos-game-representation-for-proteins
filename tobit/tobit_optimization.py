@@ -21,6 +21,9 @@ def pdf_negative_log_likelihood_reparametized(y, delta, gamma):
 def right_censored_cdf_negative_log_likelihood_reparametized(y, delta, gamma):
     return -t.sum(t.log(1 - cdf_aproximation_4(gamma * y - delta)))
 
+# def zero_bound_cdf_negative_log_likelihood_reparametized(N, delta, gamma):
+#     return -N * t.log(cdf_aproximation_4(gamma * y - delta))
+
 def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Interval]):
     single_valued, right_censored, left_censored, all = [], [], [], []
 
@@ -70,7 +73,7 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
         else:
             patience = 5
         print(i, delta, gamma)
-    mean, std = delta / gamma, gamma ** -2
+    mean, std = delta / gamma, 1/gamma
     return mean + data_mean, std * data_std
 
 def plot_gausian(mean, std):
@@ -90,10 +93,10 @@ def to_numpy(tensor: t.Tensor):
     return tensor.clone().detach().numpy()
 
 if __name__ == '__main__':
-    no_tobit = np.array([30, 50, 50, 50, 50])
+    no_tobit = np.array([30, 50, 50])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf)]
+    ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf)]
     mean, std = tobit_mean_and_variance_reparametrization(ic50)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
@@ -110,9 +113,9 @@ if __name__ == '__main__':
     # 30, 50, 50
     # 2410
     # 43.333333333333336 9.428090415820632
-    # 44.8905 59.5595
+    # 44.8905 23.6967
 
     # 30, 50, 50, 50, 50
     # 2066
     # 46.0 8.0
-    # 49.4213 108.5417
+    # 49.4213 29.4675
