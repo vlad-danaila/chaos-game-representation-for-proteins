@@ -57,8 +57,6 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
     optimizer = t.optim.SGD([delta, gamma], lr=1e-3)
     patience = 5
     for i in range(30_000):
-        if i == 34461:
-            print('here')
         prev_delta, prev_gamma = delta.clone(), gamma.clone()
         optimizer.zero_grad()
         log_likelihood = pdf_negative_log_likelihood_reparametized(single_val, delta, gamma) \
