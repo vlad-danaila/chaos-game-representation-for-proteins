@@ -1,2 +1,2 @@
-def normalize(x, mean, std):
-    return (x - mean) / std
+def normalize(x, mean, std, epsilon = 0):
+    return (x - mean) / (std + epsilon)

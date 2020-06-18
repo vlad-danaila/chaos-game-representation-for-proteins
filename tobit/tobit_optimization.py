@@ -36,7 +36,7 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
             raise Exception('Uncensored interval encountered', interval)
 
     all = np.array(single_valued + right_censored + left_censored)
-    mean, std =  all.mean(), all.std()
+    mean, std =  all.mean(), all.std() + 1e-10
 
     single_valued = t.tensor(single_valued, dtype=t.float, device=constants.DEVICE)
     right_censored = t.tensor(right_censored, dtype=t.float, device=constants.DEVICE)
@@ -51,16 +51,18 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
 def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interval]):
     single_val, right_censored, left_censored, data_mean, data_std = read_normalized_tensors_from_assay_intervals(intervals)
     delta, gamma = t.tensor(0, dtype=float, requires_grad=True), t.tensor(1, dtype=float, requires_grad=True)
-    optimizer = t.optim.SGD([delta, gamma], lr=1e-4)
+    optimizer = t.optim.SGD([delta, gamma], lr=1e-3)
     patience = 5
-    for i in range(100_000):
+    for i in range(30_000):
+        if i == 34461:
+            print('here')
         prev_delta, prev_gamma = delta.clone(), gamma.clone()
         optimizer.zero_grad()
         log_likelihood = pdf_negative_log_likelihood_reparametized(single_val, delta, gamma) \
                          + right_censored_cdf_negative_log_likelihood_reparametized(right_censored, delta, gamma)
         log_likelihood.backward()
         optimizer.step()
-        early_stop = math.fabs(delta - prev_delta) + math.fabs(gamma - prev_gamma) < 1e-8
+        early_stop = math.fabs(delta - prev_delta) + math.fabs(gamma - prev_gamma) < 1e-5
         if early_stop:
             patience -= 1
             if patience == 0:
@@ -88,10 +90,10 @@ def to_numpy(tensor: t.Tensor):
     return tensor.clone().detach().numpy()
 
 if __name__ == '__main__':
-    no_tobit = np.array([10, 50, 50, 50, 50, 50])
+    no_tobit = np.array([30, 50, 50, 50, 50])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [ p.singleton(10), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf) ]
+    ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf)]
     mean, std = tobit_mean_and_variance_reparametrization(ic50)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
@@ -100,3 +102,17 @@ if __name__ == '__main__':
     plot_gausian(to_numpy(mean), to_numpy(std))
 
     plt.show()
+
+    # TODO : Bound variance at zero
+    # TODO: Study the case of 50, (30, inf), (30, inf)
+    # TODO: Handle left censoring
+
+    # 30, 50, 50
+    # 2410
+    # 43.333333333333336 9.428090415820632
+    # 44.8905 59.5595
+
+    # 30, 50, 50, 50, 50
+    # 2066
+    # 46.0 8.0
+    # 49.4213 108.5417
