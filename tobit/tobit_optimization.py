@@ -40,7 +40,9 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
             raise Exception('Uncensored interval encountered', interval)
 
     all = np.array(single_valued + right_censored + left_censored)
-    mean, std =  all.mean(), all.std() + 1e-10
+    mean = np.array(single_valued).mean()
+    std = all.std() + 1e-10
+    # mean, std =  all.mean(), all.std() + 1e-10
 
     single_valued = t.tensor(single_valued, dtype=t.float, device=constants.DEVICE)
     right_censored = t.tensor(right_censored, dtype=t.float, device=constants.DEVICE)
@@ -84,19 +86,18 @@ def tobit_mean_and_variance_reparametrization_with_aprox(intervals: List[p.inter
     return mean + data_mean, std * data_std
 
 def tobit_mean_and_variance_reparametrization_NO_aprox(intervals: List[p.interval.Interval]):
-    log_1_minus_cdf_aprox_model = load_log_1_minus_cdf_aproximation_model()
     single_val, right_censored, left_censored, data_mean, data_std = read_normalized_tensors_from_assay_intervals(
         intervals)
     delta, gamma = t.tensor(0, dtype=float, requires_grad=True), t.tensor(1, dtype=float, requires_grad=True)
     optimizer = t.optim.SGD([delta, gamma], lr=1e-3)
     patience = 5
-    for i in range(30_000):
+    for i in range(100_000):
         prev_delta, prev_gamma = delta.clone(), gamma.clone()
         # step 1 update based on pdf gradient (for uncensored data)
         optimizer.zero_grad()
         log_likelihood_pdf = pdf_negative_log_likelihood_reparametized(single_val, delta, gamma)
         log_likelihood_pdf.backward()
-        # Compute the log(1 - cdf(x)) gradient manually
+        # step 2 compute the log(1 - cdf(x)) gradient manually
         x = to_numpy(gamma) * to_numpy(right_censored) - to_numpy(delta)
         pdf = norm.pdf(x)
         cdf = norm.cdf(x)
@@ -134,17 +135,26 @@ if __name__ == '__main__':
 
     plt.show()
 
-    # TODO : Bound variance at zero
-    # TODO: Study the case of 50, (30, inf), (30, inf)
-    # TODO: Handle left censoring
+'''
+    TODO : Bound variance at zero
+    TODO: How to normalize the data
+    TODO: Study the case of 50, (30, inf), (30, inf)
+    TODO: Handle left censoring
+    TODO: Initialize from data mean and std
 
-    # 30, 50, 50
-    # 2410
-    # 43.333333333333336 9.428090415820632
-    # 44.8905 23.6967
+    30, >50, >50
+    2410
+    43.333333333333336 9.428090415820632
+    44.8905 23.6967
 
-    # 30, 50, 50, 50, 50
-    # 2739
-    # 46.0 8.0
-    # aprox 49.7898 30.4512
-    # correct 49.4237 29.4739
+    30, >50, >50, >50, >50
+    2739
+    46.0 8.0
+    aprox 49.7898 30.4512
+    correct 49.4237 29.4739
+    
+    50, >30, >30
+    99999
+    36.66 9.42
+    38.0809 0.0516
+'''
