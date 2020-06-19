@@ -100,7 +100,7 @@ def tobit_mean_and_variance_reparametrization_NO_aprox(intervals: List[p.interva
         x = to_numpy(gamma) * to_numpy(right_censored) - to_numpy(delta)
         pdf = norm.pdf(x)
         cdf = norm.cdf(x)
-        d_delta = np.sum(pdf / (1 - cdf))
+        d_delta = np.sum(pdf / (1 - cdf)) # -1 from the derivative cancels the first minus in front of the sum
         d_gamma = -np.sum(to_numpy(right_censored) * pdf / (1 - cdf))
         delta.grad -= to_tensor(d_delta)
         gamma.grad -= to_tensor(d_gamma)
