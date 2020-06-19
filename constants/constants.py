@@ -15,3 +15,5 @@ K_NEIBHOURS = 10
 
 DEVICE = 'cpu'
 
+LOG_1_MINUS_CDF_APROXIMATION_CHECKPOINT = 'log_1_minus_cdf_aproximation_checkpoint'
+LOG_CDF_APROXIMATION_CHECKPOINT = 'log_cdf_aproximation_checkpoint'
