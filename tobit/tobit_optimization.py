@@ -11,7 +11,7 @@ from math import sqrt, pi
 import tobit
 from tobit.cdf_proximation import cdf_aproximation_4
 from tobit.log_cdf_aproximation import Log1MinusCdfAproximation
-from util.data import normalize, to_tensor, to_numpy
+from util.data import normalize, unnormalize, to_tensor, to_numpy
 
 def pdf(n):
     return ( 1 / math.sqrt(2 * math.pi) ) * t.exp( (-1/2) * (n ** 2) )
@@ -40,9 +40,9 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
             raise Exception('Uncensored interval encountered', interval)
 
     all = np.array(single_valued + right_censored + left_censored)
-    mean = np.array(single_valued).mean()
-    std = all.std() + 1e-10
-    # mean, std =  all.mean(), all.std() + 1e-10
+    # mean = np.array(single_valued).mean()
+    # std = all.std() + 1e-10
+    mean, std =  all.mean(), all.std() + 1e-10
 
     single_valued = t.tensor(single_valued, dtype=t.float, device=constants.DEVICE)
     right_censored = t.tensor(right_censored, dtype=t.float, device=constants.DEVICE)
@@ -93,11 +93,13 @@ def tobit_mean_and_variance_reparametrization_NO_aprox(intervals: List[p.interva
     patience = 5
     for i in range(100_000):
         prev_delta, prev_gamma = delta.clone(), gamma.clone()
+
         # step 1 update based on pdf gradient (for uncensored data)
         optimizer.zero_grad()
         log_likelihood_pdf = pdf_negative_log_likelihood_reparametized(single_val, delta, gamma)
         log_likelihood_pdf.backward()
-        # step 2 compute the log(1 - cdf(x)) gradient manually
+
+        # step 2 compute the log(1 - cdf(x)) gradient manually (for right censored data)
         x = to_numpy(gamma) * to_numpy(right_censored) - to_numpy(delta)
         pdf = norm.pdf(x)
         cdf = norm.cdf(x)
@@ -105,6 +107,12 @@ def tobit_mean_and_variance_reparametrization_NO_aprox(intervals: List[p.interva
         d_gamma = -np.sum(to_numpy(right_censored) * pdf / (1 - cdf))
         delta.grad -= to_tensor(d_delta)
         gamma.grad -= to_tensor(d_gamma)
+
+        # step 3 bound distribution to zero
+        # normalized_zero = -data_mean / data_std
+        # pdf_for_zero = norm.pdf(normalized_zero)
+        # cdf_for_zero = norm.cdf(normalized_zero)
+
         optimizer.step()
         early_stop = math.fabs(delta - prev_delta) + math.fabs(gamma - prev_gamma) < 1e-5
         if early_stop:
@@ -115,17 +123,17 @@ def tobit_mean_and_variance_reparametrization_NO_aprox(intervals: List[p.interva
             patience = 5
         print(i, delta, gamma)
     mean, std = delta / gamma, 1 / gamma
-    return mean + data_mean, std * data_std
+    return unnormalize(mean, data_mean, data_std), std * data_std
 
 def plot_gausian(mean, std):
     x = np.linspace(mean - 3 * std, mean + 3 * std, 1000)
     plt.plot(x, norm.pdf(x, mean, std))
 
 if __name__ == '__main__':
-    no_tobit = np.array([30, 50, 50, 50, 50])
+    no_tobit = np.array([30, 50, 50])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf)]
+    ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf)]
     mean, std = tobit_mean_and_variance_reparametrization_NO_aprox(ic50)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
@@ -143,18 +151,17 @@ if __name__ == '__main__':
     TODO: Initialize from data mean and std
 
     30, >50, >50
-    2410
+    2411
     43.333333333333336 9.428090415820632
-    44.8905 23.6967
+    58.0191 23.6987
 
     30, >50, >50, >50, >50
-    2739
+    2066
     46.0 8.0
-    aprox 49.7898 30.4512
-    correct 49.4237 29.4739
+    correct 73.3895 29.4739
     
     50, >30, >30
     99999
     36.66 9.42
-    38.0809 0.0516
+    49.9330 1.1563
 '''
