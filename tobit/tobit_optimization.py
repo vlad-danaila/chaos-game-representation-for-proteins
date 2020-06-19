@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from math import sqrt, pi
 import tobit
 from tobit.cdf_proximation import cdf_aproximation_4
+from tobit.log_cdf_aproximation import Log1MinusCdfAproximation
 from util.data import normalize
 
 def pdf(n):
@@ -18,8 +19,8 @@ def pdf(n):
 def pdf_negative_log_likelihood_reparametized(y, delta, gamma):
     return -t.sum(t.log(gamma) + t.log(pdf(gamma * y - delta)))
 
-def right_censored_cdf_negative_log_likelihood_reparametized(y, delta, gamma):
-    return -t.sum(t.log(1 - cdf_aproximation_4(gamma * y - delta)))
+def right_censored_cdf_negative_log_likelihood_reparametized(y, delta, gamma, log_of_1_minus_cdf_aproximation_model: t.nn.Module):
+    return -t.sum(log_of_1_minus_cdf_aproximation_model(gamma * y - delta))
 
 # def zero_bound_cdf_negative_log_likelihood_reparametized(N, delta, gamma):
 #     return -N * t.log(cdf_aproximation_4(gamma * y - delta))
@@ -51,16 +52,24 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
 
     return single_valued, right_censored, left_censored, mean, std
 
+def load_log_1_minus_cdf_aproximation_model():
+    model: t.nn.Module = Log1MinusCdfAproximation()
+    model.load_state_dict(t.load(constants.LOG_1_MINUS_CDF_APROXIMATION_CHECKPOINT))
+    model.eval()
+    return model
+
 def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interval]):
+    log_1_minus_cdf_aprox_model = load_log_1_minus_cdf_aproximation_model()
     single_val, right_censored, left_censored, data_mean, data_std = read_normalized_tensors_from_assay_intervals(intervals)
     delta, gamma = t.tensor(0, dtype=float, requires_grad=True), t.tensor(1, dtype=float, requires_grad=True)
     optimizer = t.optim.SGD([delta, gamma], lr=1e-3)
     patience = 5
+
     for i in range(30_000):
         prev_delta, prev_gamma = delta.clone(), gamma.clone()
         optimizer.zero_grad()
         log_likelihood = pdf_negative_log_likelihood_reparametized(single_val, delta, gamma) \
-                         + right_censored_cdf_negative_log_likelihood_reparametized(right_censored, delta, gamma)
+                         + right_censored_cdf_negative_log_likelihood_reparametized(right_censored, delta, gamma, log_1_minus_cdf_aprox_model)
         log_likelihood.backward()
         optimizer.step()
         early_stop = math.fabs(delta - prev_delta) + math.fabs(gamma - prev_gamma) < 1e-5
@@ -91,15 +100,15 @@ def to_numpy(tensor: t.Tensor):
     return tensor.clone().detach().numpy()
 
 if __name__ == '__main__':
-    no_tobit = np.array([30, 50, 50])
+    no_tobit = np.array([30, 50, 50, 50, 50])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf)]
+    ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf)]
     mean, std = tobit_mean_and_variance_reparametrization(ic50)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
     plot_gausian(no_tobit_mean, no_tobit_std)
-    print(mean, std)
+    print('Mean', mean, 'std', std)
     plot_gausian(to_numpy(mean), to_numpy(std))
 
     plt.show()
