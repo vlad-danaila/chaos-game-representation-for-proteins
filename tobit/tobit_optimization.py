@@ -52,7 +52,7 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
     right_censored = normalize(right_censored, mean, std)
     left_censored = normalize(left_censored, mean, std)
 
-    return single_valued, right_censored, left_censored, mean, std
+    return single_valued, right_censored, left_censored, mean, std, len(all)
 
 def load_log_1_minus_cdf_aproximation_model():
     model: t.nn.Module = Log1MinusCdfAproximation()
@@ -65,18 +65,32 @@ def grad_of_log_1_minus_cdf_by_delta_gamma(gamma: t.Tensor, delta: t.Tensor, y: 
     x = _gamma * _y - _delta
     pdf = norm.pdf(x)
     cdf = norm.cdf(x)
-    d_delta = np.sum(pdf / (1 - cdf))  # -1 from the derivative cancels the first minus in front of the sum
+    d_delta = np.sum(pdf / (1 - cdf))  # -1 from the derivative of delta cancels the first minus in front of the sum
     d_gamma = -np.sum(_y * pdf / (1 - cdf))
+    return d_delta, d_gamma
+
+# This bound the distribution to the zero
+def grad_of_minus_log_likelihood_cdf_0_by_delta_gamma(gamma: t.Tensor, delta: t.Tensor, data_mean, data_std, N):
+    # _y or -data_mean / data_std is zero normalized
+    _gamma, _delta, _y = to_numpy(gamma), to_numpy(delta), -data_mean / data_std
+    x = _gamma * _y - _delta
+    pdf = norm.pdf(x)
+    cdf = norm.cdf(x) + 1e-10
+    d_delta = N * (pdf / cdf)  # -1 from the derivative of delta cancels the first minus in front of the sum
+    d_gamma = -N * _y * pdf / cdf
     return d_delta, d_gamma
 
 def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interval], aproximation = False):
     if aproximation:
         log_1_minus_cdf_aprox_model = load_log_1_minus_cdf_aproximation_model()
-    single_val, right_censored, left_censored, data_mean, data_std = read_normalized_tensors_from_assay_intervals(intervals)
+    single_val, right_censored, left_censored, data_mean, data_std, N = read_normalized_tensors_from_assay_intervals(intervals)
     delta, gamma = to_tensor(0, grad = True), to_tensor(1, grad = True)
     optimizer = t.optim.SGD([delta, gamma], lr=1e-3)
     patience = 5
     for i in range(100_000):
+        if i == 34:
+            print('hi')
+
         prev_delta, prev_gamma = delta.clone(), gamma.clone()
         optimizer.zero_grad()
 
@@ -95,9 +109,12 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
             gamma.grad -= to_tensor(d_gamma)
 
         # step 3 bound distribution to zero
-        # normalized_zero = -data_mean / data_std
-        # pdf_for_zero = norm.pdf(normalized_zero)
-        # cdf_for_zero = norm.cdf(normalized_zero)
+        if aproximation:
+            raise Exception('Unimplemented')
+        else:
+            d_delta, d_gamma = grad_of_minus_log_likelihood_cdf_0_by_delta_gamma(gamma, delta, data_mean, data_std, N)
+            delta.grad -= to_tensor(d_delta)
+            gamma.grad -= to_tensor(d_gamma)
 
         optimizer.step()
         early_stop = math.fabs(delta - prev_delta) + math.fabs(gamma - prev_gamma) < 1e-5
@@ -116,11 +133,11 @@ def plot_gausian(mean, std):
     plt.plot(x, norm.pdf(x, mean, std))
 
 if __name__ == '__main__':
-    no_tobit = np.array([50, 30, 30])
+    no_tobit = np.array([30, 50, 50])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [ p.singleton(50), p.closed(30, p.inf), p.closed(30, p.inf)]
-    mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = True)
+    ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf)]
+    mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = False)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
     plot_gausian(no_tobit_mean, no_tobit_std)
@@ -153,4 +170,11 @@ if __name__ == '__main__':
     36.66 9.42
     correct 49.9330 1.1563
     estimat 49.9355 1.1351
+    
+    Remains unchanged, because there was nothing to learn
+    >30, >30, >30
+    99999
+    30 0
+    30 1.0000e-10
+
 '''
