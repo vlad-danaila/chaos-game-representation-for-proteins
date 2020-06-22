@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from math import sqrt, pi, log
 import tobit
 from tobit.cdf_proximation import cdf_aproximation_4
-from tobit.log_cdf_aproximation import Log1MinusCdfAproximation
+from tobit.log_cdf_aproximation import LogCdfEnsembleAproximation
 from util.data import normalize, unnormalize, to_tensor, to_numpy
 
 # this is the same as -sum(ln(gamma) + ln(pdf(gamma * y - delta)))
@@ -18,7 +18,7 @@ def pdf_negative_log_likelihood_reparametized(y, delta, gamma):
     return -t.sum(t.log(gamma) - ((gamma * y - delta) ** 2)/2)
 
 def right_censored_cdf_negative_log_likelihood_reparametized(y, delta, gamma, log_of_1_minus_cdf_aproximation_model: t.nn.Module):
-    return -t.sum(log_of_1_minus_cdf_aproximation_model(gamma * y - delta))
+    return -t.sum(log_of_1_minus_cdf_aproximation_model(-gamma * y + delta))
 
 def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Interval]):
     single_valued, right_censored, left_censored, all = [], [], [], []
@@ -48,7 +48,7 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
     return single_valued, right_censored, left_censored, mean, std, len(all)
 
 def load_log_1_minus_cdf_aproximation_model():
-    model: t.nn.Module = Log1MinusCdfAproximation()
+    model: t.nn.Module = LogCdfEnsembleAproximation()
     model.load_state_dict(t.load(constants.LOG_1_MINUS_CDF_APROXIMATION_CHECKPOINT))
     model.eval()
     return model
@@ -90,6 +90,8 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
             delta.grad -= to_tensor(d_delta)
             gamma.grad -= to_tensor(d_gamma)
 
+        # step 3 compute
+
         optimizer.step()
         early_stop = math.fabs(delta - prev_delta) + math.fabs(gamma - prev_gamma) < 1e-5
         if early_stop:
@@ -111,7 +113,7 @@ if __name__ == '__main__':
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
     ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf)]
-    mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = False)
+    mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = True)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
     plot_gausian(no_tobit_mean, no_tobit_std)
@@ -131,7 +133,7 @@ if __name__ == '__main__':
     2411
     43.333333333333336 9.428090415820632
     correct 58.0191 23.6987
-    estimat 55.9838 22.8201
+    estimat 58.0020 23.6908
 
     30, >50, >50, >50, >50
     2066
