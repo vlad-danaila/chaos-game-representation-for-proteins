@@ -7,17 +7,15 @@ import math
 from scipy.stats import norm
 import numpy as np
 import matplotlib.pyplot as plt
-from math import sqrt, pi
+from math import sqrt, pi, log
 import tobit
 from tobit.cdf_proximation import cdf_aproximation_4
 from tobit.log_cdf_aproximation import Log1MinusCdfAproximation
 from util.data import normalize, unnormalize, to_tensor, to_numpy
 
-def pdf(n):
-    return ( 1 / math.sqrt(2 * math.pi) ) * t.exp( (-1/2) * (n ** 2) )
-
+# this is the same as -sum(ln(gamma) + ln(pdf(gamma * y - delta)))
 def pdf_negative_log_likelihood_reparametized(y, delta, gamma):
-    return -t.sum(t.log(gamma) + t.log(pdf(gamma * y - delta)))
+    return -t.sum(t.log(gamma) - ((gamma * y - delta) ** 2)/2)
 
 def right_censored_cdf_negative_log_likelihood_reparametized(y, delta, gamma, log_of_1_minus_cdf_aproximation_model: t.nn.Module):
     return -t.sum(log_of_1_minus_cdf_aproximation_model(gamma * y - delta))
