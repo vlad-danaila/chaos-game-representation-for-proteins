@@ -22,9 +22,6 @@ def pdf_negative_log_likelihood_reparametized(y, delta, gamma):
 def right_censored_cdf_negative_log_likelihood_reparametized(y, delta, gamma, log_of_1_minus_cdf_aproximation_model: t.nn.Module):
     return -t.sum(log_of_1_minus_cdf_aproximation_model(gamma * y - delta))
 
-# def zero_bound_cdf_negative_log_likelihood_reparametized(N, delta, gamma):
-#     return -N * t.log(cdf_aproximation_4(gamma * y - delta))
-
 def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Interval]):
     single_valued, right_censored, left_censored, all = [], [], [], []
 
@@ -40,8 +37,6 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
             raise Exception('Uncensored interval encountered', interval)
 
     all = np.array(single_valued + right_censored + left_censored)
-    # mean = np.array(single_valued).mean()
-    # std = all.std() + 1e-10
     mean, std =  all.mean(), all.std() + 1e-10
 
     single_valued = t.tensor(single_valued, dtype=t.float, device=constants.DEVICE)
@@ -60,24 +55,13 @@ def load_log_1_minus_cdf_aproximation_model():
     model.eval()
     return model
 
-def grad_of_log_1_minus_cdf_by_delta_gamma(gamma: t.Tensor, delta: t.Tensor, y: t.Tensor):
+def grad_log_cdf_by_delta_gamma(gamma: t.Tensor, delta: t.Tensor, y: t.Tensor):
     _gamma, _delta, _y = to_numpy(gamma), to_numpy(delta), to_numpy(y)
-    x = _gamma * _y - _delta
+    x = -_gamma * _y + _delta
     pdf = norm.pdf(x)
     cdf = norm.cdf(x)
-    d_delta = np.sum(pdf / (1 - cdf))  # -1 from the derivative of delta cancels the first minus in front of the sum
-    d_gamma = -np.sum(_y * pdf / (1 - cdf))
-    return d_delta, d_gamma
-
-# This bound the distribution to the zero
-def grad_of_minus_log_likelihood_cdf_0_by_delta_gamma(gamma: t.Tensor, delta: t.Tensor, data_mean, data_std, N):
-    # _y or -data_mean / data_std is zero normalized
-    _gamma, _delta, _y = to_numpy(gamma), to_numpy(delta), -data_mean / data_std
-    x = _gamma * _y - _delta
-    pdf = norm.pdf(x)
-    cdf = norm.cdf(x) + 1e-10
-    d_delta = N * (pdf / cdf)  # -1 from the derivative of delta cancels the first minus in front of the sum
-    d_gamma = -N * _y * pdf / cdf
+    d_delta = np.sum(pdf / cdf)
+    d_gamma = -np.sum(_y * pdf / cdf)
     return d_delta, d_gamma
 
 def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interval], aproximation = False):
@@ -87,7 +71,7 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
     delta, gamma = to_tensor(0, grad = True), to_tensor(1, grad = True)
     optimizer = t.optim.SGD([delta, gamma], lr=1e-3)
     patience = 5
-    for i in range(100_000):
+    for i in range(30_000):
         if i == 34:
             print('hi')
 
@@ -98,21 +82,13 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
         log_likelihood_pdf = pdf_negative_log_likelihood_reparametized(single_val, delta, gamma)
         log_likelihood_pdf.backward()
 
-        # step 2 compute the log(1 - cdf(x)) gradient (for right censored data)
+        # step 2 compute the log(1 - cdf(x)) = log(cdf(-x)) gradient (for right censored data)
         if aproximation:
             log_likelihood_1_minus_cdf = right_censored_cdf_negative_log_likelihood_reparametized(
                 right_censored, delta, gamma, log_1_minus_cdf_aprox_model)
             log_likelihood_1_minus_cdf.backward()
         else:
-            d_delta, d_gamma = grad_of_log_1_minus_cdf_by_delta_gamma(gamma, delta, right_censored)
-            delta.grad -= to_tensor(d_delta)
-            gamma.grad -= to_tensor(d_gamma)
-
-        # step 3 bound distribution to zero
-        if aproximation:
-            raise Exception('Unimplemented')
-        else:
-            d_delta, d_gamma = grad_of_minus_log_likelihood_cdf_0_by_delta_gamma(gamma, delta, data_mean, data_std, N)
+            d_delta, d_gamma = grad_log_cdf_by_delta_gamma(gamma, delta, right_censored)
             delta.grad -= to_tensor(d_delta)
             gamma.grad -= to_tensor(d_gamma)
 
