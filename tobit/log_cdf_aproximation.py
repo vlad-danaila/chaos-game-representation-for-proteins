@@ -40,10 +40,12 @@ class LogCdfEnsembleAproximation(Module):
             result = result + self.get_estimator(i).forward(x)
         return result
 
-def fit_softplus_to_log_1_minus_cdf():
+def fit_softplus_to_log_1_minus_cdf(load_from_chekpoint = False):
     model: t.nn.Module = LogCdfEnsembleAproximation()
+    if load_from_chekpoint:
+        model.load_state_dict(t.load(constants.LOG_CDF_APROXIMATION_CHECKPOINT))
     optimizer = t.optim.Adam(model.parameters(), lr=1e-5)
-    for i in range(500_000):
+    for i in range(50_000):
         optimizer.zero_grad()
         x = t.tensor(np.random.uniform(-30, 30, 10_000), dtype=t.float64, requires_grad=False)
         aprox = model.forward(x)
@@ -62,7 +64,7 @@ def log_cdf_plot(aporx_function):
     plt.plot(x.clone().detach().numpy(), aporx_function(x).clone().detach().numpy())
 
 if __name__ == '__main__':
-    fit_softplus_to_log_1_minus_cdf()
+    fit_softplus_to_log_1_minus_cdf(load_from_chekpoint=True)
 
     model_log_1_minus_cdf: Module = LogCdfEnsembleAproximation()
     model_log_1_minus_cdf.load_state_dict(t.load(constants.LOG_CDF_APROXIMATION_CHECKPOINT))
