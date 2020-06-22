@@ -49,7 +49,7 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
 
 def load_log_1_minus_cdf_aproximation_model():
     model: t.nn.Module = LogCdfEnsembleAproximation()
-    model.load_state_dict(t.load(constants.LOG_1_MINUS_CDF_APROXIMATION_CHECKPOINT))
+    model.load_state_dict(t.load(constants.LOG_CDF_APROXIMATION_CHECKPOINT))
     model.eval()
     return model
 

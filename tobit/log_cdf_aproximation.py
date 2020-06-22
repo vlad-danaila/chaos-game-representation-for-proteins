@@ -6,6 +6,7 @@ from torch.nn import Module, Parameter
 import constants
 from util.data import to_tensor
 from random import random
+from util.timer import timer_start, timer_end
 
 class LogCdfSoftplusAproximation(Module):
 
@@ -42,9 +43,9 @@ class LogCdfEnsembleAproximation(Module):
 def fit_softplus_to_log_1_minus_cdf():
     model: t.nn.Module = LogCdfEnsembleAproximation()
     optimizer = t.optim.Adam(model.parameters(), lr=1e-5)
-    for i in range(100_000):
+    for i in range(500_000):
         optimizer.zero_grad()
-        x = t.tensor(np.random.uniform(-15, 15, 10_000), dtype=t.float64, requires_grad=False)
+        x = t.tensor(np.random.uniform(-30, 30, 10_000), dtype=t.float64, requires_grad=False)
         aprox = model.forward(x)
         expected = np.log(norm.cdf(x))
         expected = t.tensor(expected, dtype=t.float64)
@@ -54,19 +55,19 @@ def fit_softplus_to_log_1_minus_cdf():
         if i % 1000 == 0:
             print(i, loss)
     print(i, loss)
-    t.save(model.state_dict(), constants.LOG_1_MINUS_CDF_APROXIMATION_CHECKPOINT)
+    t.save(model.state_dict(), constants.LOG_CDF_APROXIMATION_CHECKPOINT)
 
-def log_1_minus_cdf_plot(aporx_function):
-    x = t.tensor(np.linspace(-25, 25, 1000), dtype=t.float64, requires_grad=False)
+def log_cdf_plot(aporx_function):
+    x = t.tensor(np.linspace(-50, 50, 1000), dtype=t.float64, requires_grad=False)
     plt.plot(x.clone().detach().numpy(), aporx_function(x).clone().detach().numpy())
 
 if __name__ == '__main__':
-    # fit_softplus_to_log_1_minus_cdf()
+    fit_softplus_to_log_1_minus_cdf()
 
     model_log_1_minus_cdf: Module = LogCdfEnsembleAproximation()
-    model_log_1_minus_cdf.load_state_dict(t.load(constants.LOG_1_MINUS_CDF_APROXIMATION_CHECKPOINT))
+    model_log_1_minus_cdf.load_state_dict(t.load(constants.LOG_CDF_APROXIMATION_CHECKPOINT))
 
-    log_1_minus_cdf_plot(lambda x: t.log(to_tensor(norm.cdf(x))))
-    log_1_minus_cdf_plot(lambda x: model_log_1_minus_cdf.forward(x))
+    log_cdf_plot(lambda x: t.log(to_tensor(norm.cdf(x))))
+    log_cdf_plot(lambda x: model_log_1_minus_cdf.forward(x))
 
     plt.show()
