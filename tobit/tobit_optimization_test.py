@@ -51,3 +51,8 @@ class TobitOptimizationTest(unittest.TestCase):
         if not DISABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(30, p.inf), p.closed(30, p.inf), p.closed(30, p.inf)]
             self.check_mean_std(ic50, 30, 1e-10)
+
+    # # <10 <10 30
+    def test_left_censored_10_10_30(self):
+        ic50 = [p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.singleton(30)]
+        self.check_mean_std(ic50, 1.8617, 23.7228)

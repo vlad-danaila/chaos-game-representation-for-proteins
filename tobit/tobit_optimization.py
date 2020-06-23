@@ -50,13 +50,14 @@ def load_log_1_minus_cdf_aproximation_model():
     model.eval()
     return model
 
-def grad_log_cdf_by_delta_gamma(gamma: t.Tensor, delta: t.Tensor, y: t.Tensor):
-    _gamma, _delta, _y = to_numpy(gamma), to_numpy(delta), to_numpy(y)
+def grad_log_cdf_by_delta_gamma(gamma: t.Tensor, delta: t.Tensor, y: t.Tensor, invert_sign = False):
+    sign = -1 if invert_sign else 1
+    _gamma, _delta, _y = sign * to_numpy(gamma), sign * to_numpy(delta), to_numpy(y)
     x = _gamma * _y - _delta
     pdf = norm.pdf(x)
     cdf = norm.cdf(x)
-    d_delta = np.sum(pdf / cdf)
-    d_gamma = -np.sum(_y * pdf / cdf)
+    d_delta = - sign * np.sum(pdf / cdf)
+    d_gamma = sign * np.sum(_y * pdf / cdf)
     return d_delta, d_gamma
 
 def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interval], aproximation = False):
@@ -82,7 +83,7 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
                 log_likelihood_1_minus_cdf = -t.sum(log_1_minus_cdf_aprox_model(-gamma * right_censored + delta))
                 log_likelihood_1_minus_cdf.backward()
             else:
-                d_delta, d_gamma = grad_log_cdf_by_delta_gamma(-gamma, -delta, right_censored)
+                d_delta, d_gamma = grad_log_cdf_by_delta_gamma(gamma, delta, right_censored, invert_sign = True)
                 delta.grad -= to_tensor(d_delta)
                 gamma.grad -= to_tensor(d_gamma)
 
@@ -131,6 +132,4 @@ if __name__ == '__main__':
 
 '''
     TODO: Handle left censoring
-    
-    Mean tensor(39.2030, dtype=torch.float64, grad_fn=<AddBackward0>) std tensor(13.5950, dtype=torch.float64, grad_fn=<MulBackward0>)
 '''
