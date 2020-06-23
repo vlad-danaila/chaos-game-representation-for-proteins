@@ -67,17 +67,14 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
     optimizer = t.optim.SGD([delta, gamma], lr=1e-3)
     patience = 5
     for i in range(30_000):
-        if i == 34:
-            print('hi')
-
         prev_delta, prev_gamma = delta.clone(), gamma.clone()
         optimizer.zero_grad()
 
         # step 1 update based on pdf gradient (for uncensored data)
         # this is the same as -sum(ln(gamma) + ln(pdf(gamma * y - delta)))
-        if len(single_val) > 0:
-            log_likelihood_pdf = -t.sum(t.log(gamma) - ((gamma * single_val - delta) ** 2)/2)
-            log_likelihood_pdf.backward()
+        # if len(single_val) > 0:
+        log_likelihood_pdf = -t.sum(t.log(gamma) - ((gamma * single_val - delta) ** 2)/2)
+        log_likelihood_pdf.backward()
 
         # step 2 compute the log(1 - cdf(x)) = log(cdf(-x)) gradient (for right censored data)
         if len(right_censored) > 0:
@@ -107,7 +104,10 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
                 break
         else:
             patience = 5
-        print(i, delta, gamma)
+
+        if i % 100 == 0:
+            print(i, delta, gamma)
+    print(i, delta, gamma)
     mean, std = delta / gamma, 1 / gamma
     return unnormalize(mean, data_mean, data_std), std * data_std
 
@@ -131,29 +131,4 @@ if __name__ == '__main__':
 
 '''
     TODO: Handle left censoring
-
-    30, >50, >50
-    2411
-    43.333333333333336 9.428090415820632
-    correct 58.0191 23.6987
-    estimat 57.8866 23.6429
-
-    30, >50, >50, >50, >50
-    2066
-    46.0 8.0
-    correct 73.3895 29.4739
-    estimat 76.3181 30.4512
-    
-    50, >30, >30
-    99999
-    36.66 9.42
-    correct 49.9330 1.1563
-    estimat 49.9355 1.1351
-    
-    Remains unchanged, because there was nothing to learn
-    >30, >30, >30
-    99999
-    30 0
-    correct 30 1.0000e-10
-    estimat 30 1.0000e-10
 '''
