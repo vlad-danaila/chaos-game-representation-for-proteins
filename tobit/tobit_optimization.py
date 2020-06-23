@@ -14,11 +14,8 @@ from tobit.log_cdf_aproximation import LogCdfEnsembleAproximation
 from util.data import normalize, unnormalize, to_tensor, to_numpy
 
 # this is the same as -sum(ln(gamma) + ln(pdf(gamma * y - delta)))
-def pdf_negative_log_likelihood_reparametized(y, delta, gamma):
-    return -t.sum(t.log(gamma) - ((gamma * y - delta) ** 2)/2)
-
-def right_censored_cdf_negative_log_likelihood_reparametized(y, delta, gamma, log_of_1_minus_cdf_aproximation_model: t.nn.Module):
-    return -t.sum(log_of_1_minus_cdf_aproximation_model(-gamma * y + delta))
+# def pdf_negative_log_likelihood_reparametized(y, delta, gamma):
+#     return -t.sum(t.log(gamma) - ((gamma * y - delta) ** 2)/2)
 
 def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Interval]):
     single_valued, right_censored, left_censored, all = [], [], [], []
@@ -55,7 +52,7 @@ def load_log_1_minus_cdf_aproximation_model():
 
 def grad_log_cdf_by_delta_gamma(gamma: t.Tensor, delta: t.Tensor, y: t.Tensor):
     _gamma, _delta, _y = to_numpy(gamma), to_numpy(delta), to_numpy(y)
-    x = -_gamma * _y + _delta
+    x = _gamma * _y - _delta
     pdf = norm.pdf(x)
     cdf = norm.cdf(x)
     d_delta = np.sum(pdf / cdf)
@@ -77,20 +74,30 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
         optimizer.zero_grad()
 
         # step 1 update based on pdf gradient (for uncensored data)
-        log_likelihood_pdf = pdf_negative_log_likelihood_reparametized(single_val, delta, gamma)
-        log_likelihood_pdf.backward()
+        # this is the same as -sum(ln(gamma) + ln(pdf(gamma * y - delta)))
+        if len(single_val) > 0:
+            log_likelihood_pdf = -t.sum(t.log(gamma) - ((gamma * single_val - delta) ** 2)/2)
+            log_likelihood_pdf.backward()
 
         # step 2 compute the log(1 - cdf(x)) = log(cdf(-x)) gradient (for right censored data)
-        if aproximation:
-            log_likelihood_1_minus_cdf = right_censored_cdf_negative_log_likelihood_reparametized(
-                right_censored, delta, gamma, log_1_minus_cdf_aprox_model)
-            log_likelihood_1_minus_cdf.backward()
-        else:
-            d_delta, d_gamma = grad_log_cdf_by_delta_gamma(gamma, delta, right_censored)
-            delta.grad -= to_tensor(d_delta)
-            gamma.grad -= to_tensor(d_gamma)
+        if len(right_censored) > 0:
+            if aproximation:
+                log_likelihood_1_minus_cdf = -t.sum(log_1_minus_cdf_aprox_model(-gamma * right_censored + delta))
+                log_likelihood_1_minus_cdf.backward()
+            else:
+                d_delta, d_gamma = grad_log_cdf_by_delta_gamma(-gamma, -delta, right_censored)
+                delta.grad -= to_tensor(d_delta)
+                gamma.grad -= to_tensor(d_gamma)
 
-        # step 3 compute
+        # step 3 compute the log(cdf(x)) gradient (for left censored data)
+        if len(left_censored) > 0:
+            if aproximation:
+                log_likelihood_cdf = -t.sum(log_1_minus_cdf_aprox_model(gamma * left_censored - delta))
+                log_likelihood_cdf.backward()
+            else:
+                d_delta, d_gamma = grad_log_cdf_by_delta_gamma(gamma, delta, left_censored)
+                delta.grad -= to_tensor(d_delta)
+                gamma.grad -= to_tensor(d_gamma)
 
         optimizer.step()
         early_stop = math.fabs(delta - prev_delta) + math.fabs(gamma - prev_gamma) < 1e-5
@@ -113,7 +120,7 @@ if __name__ == '__main__':
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
     ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf)]
-    mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = True)
+    mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = False)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
     plot_gausian(no_tobit_mean, no_tobit_std)
@@ -123,17 +130,13 @@ if __name__ == '__main__':
     plt.show()
 
 '''
-    TODO : Bound variance at zero
-    TODO: How to normalize the data
-    TODO: Study the case of 50, (30, inf), (30, inf)
     TODO: Handle left censoring
-    TODO: Initialize from data mean and std
 
     30, >50, >50
     2411
     43.333333333333336 9.428090415820632
     correct 58.0191 23.6987
-    estimat 58.0020 23.6908
+    estimat 57.8866 23.6429
 
     30, >50, >50, >50, >50
     2066
@@ -151,6 +154,6 @@ if __name__ == '__main__':
     >30, >30, >30
     99999
     30 0
-    30 1.0000e-10
-
+    correct 30 1.0000e-10
+    estimat 30 1.0000e-10
 '''
