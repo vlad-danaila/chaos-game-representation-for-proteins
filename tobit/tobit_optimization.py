@@ -64,15 +64,14 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
         log_1_minus_cdf_aprox_model = load_log_1_minus_cdf_aproximation_model()
     single_val, right_censored, left_censored, data_mean, data_std, N = read_normalized_tensors_from_assay_intervals(intervals)
     delta, gamma = to_tensor(0, grad = True), to_tensor(1, grad = True)
-    optimizer = t.optim.SGD([delta, gamma], lr=1e-3)
+    optimizer = t.optim.SGD([delta, gamma], lr=1e-1)
     patience = 5
-    for i in range(30_000):
+    for i in range(1000):
         prev_delta, prev_gamma = delta.clone(), gamma.clone()
         optimizer.zero_grad()
 
         # step 1 update based on pdf gradient (for uncensored data)
         # this is the same as -sum(ln(gamma) + ln(pdf(gamma * y - delta)))
-        # if len(single_val) > 0:
         log_likelihood_pdf = -t.sum(t.log(gamma) - ((gamma * single_val - delta) ** 2)/2)
         log_likelihood_pdf.backward()
 

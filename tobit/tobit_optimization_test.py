@@ -2,7 +2,7 @@ import unittest
 import portion as p
 from tobit.tobit_optimization import tobit_mean_and_variance_reparametrization
 
-DISABLE_LONG_RUNNING_TESTS = True
+DISABLE_LONG_RUNNING_TESTS = False
 
 class TobitOptimizationTest(unittest.TestCase):
 
