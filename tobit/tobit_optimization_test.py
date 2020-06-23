@@ -6,12 +6,12 @@ DISABLE_LONG_RUNNING_TESTS = False
 
 class TobitOptimizationTest(unittest.TestCase):
 
-    def check_mean_std(self, ic50, expected_mean, expected_std, delta_real = .4, delta_aprox = .4):
-        mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation=False)
+    def check_mean_std(self, ic50, expected_mean, expected_std, delta_real = .4, delta_aprox = .5):
+        mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = False)
         self.assertAlmostEqual(mean.item(), expected_mean, delta = delta_real)
         self.assertAlmostEqual(std.item(), expected_std, delta = delta_real)
 
-        mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation=True)
+        mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = True)
         self.assertAlmostEqual(mean.item(), expected_mean, delta = delta_aprox)
         self.assertAlmostEqual(std.item(), expected_std, delta = delta_aprox)
 
@@ -52,7 +52,12 @@ class TobitOptimizationTest(unittest.TestCase):
             ic50 = [p.closed(30, p.inf), p.closed(30, p.inf), p.closed(30, p.inf)]
             self.check_mean_std(ic50, 30, 1e-10)
 
-    # # <10 <10 30
+    # <10 <10 30
     def test_left_censored_10_10_30(self):
         ic50 = [p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.singleton(30)]
         self.check_mean_std(ic50, 1.8617, 23.7228)
+
+    # <10 <10 <10 <10 30
+    def test_left_censored_10_10_10_10_30(self):
+        ic50 = [ p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.singleton(30)]
+        self.check_mean_std(ic50, -13.5183, 29.5021)

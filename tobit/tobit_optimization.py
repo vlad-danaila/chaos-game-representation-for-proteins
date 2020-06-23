@@ -64,7 +64,6 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
     if aproximation:
         log_1_minus_cdf_aprox_model = load_log_1_minus_cdf_aproximation_model()
     single_val, right_censored, left_censored, data_mean, data_std, N = read_normalized_tensors_from_assay_intervals(intervals)
-    print(left_censored)
     delta, gamma = to_tensor(0, grad = True), to_tensor(1, grad = True)
     optimizer = t.optim.SGD([delta, gamma], lr=1e-1)
     patience = 5
@@ -117,10 +116,10 @@ def plot_gausian(mean, std):
     plt.plot(x, norm.pdf(x, mean, std))
 
 if __name__ == '__main__':
-    no_tobit = np.array([10, 10, 30])
+    no_tobit = np.array([10, 10, 10, 10, 30])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [ p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.singleton(30)]
+    ic50 = [ p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.singleton(30)]
     mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = False)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
