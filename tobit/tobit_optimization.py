@@ -115,10 +115,10 @@ def plot_gausian(mean, std):
     plt.plot(x, norm.pdf(x, mean, std))
 
 if __name__ == '__main__':
-    no_tobit = np.array([30, 50, 50])
+    no_tobit = np.array([30, 30, 30, 30, 50])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [ p.singleton(30), p.closed(50, p.inf), p.closed(50, p.inf)]
+    ic50 = [ p.singleton(30), p.singleton(30), p.singleton(30), p.singleton(30), p.closed(50, p.inf)]
     mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = False)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
@@ -130,4 +130,6 @@ if __name__ == '__main__':
 
 '''
     TODO: Handle left censoring
+    
+    Mean tensor(39.2030, dtype=torch.float64, grad_fn=<AddBackward0>) std tensor(13.5950, dtype=torch.float64, grad_fn=<MulBackward0>)
 '''
