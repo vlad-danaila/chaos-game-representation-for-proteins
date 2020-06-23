@@ -6,14 +6,19 @@ DISABLE_LONG_RUNNING_TESTS = False
 
 class TobitOptimizationTest(unittest.TestCase):
 
-    def check_mean_std(self, ic50, mean, std, delta_real = 1e-5, delta_aprox = 0.2):
+    def check_mean_std(self, ic50, expected_mean, expected_std, delta_real = .4, delta_aprox = .4):
         mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation=False)
-        self.assertAlmostEqual(mean.item(), mean, delta = delta_real)
-        self.assertAlmostEqual(std.item(), std, delta = delta_real)
+        self.assertAlmostEqual(mean.item(), expected_mean, delta = delta_real)
+        self.assertAlmostEqual(std.item(), expected_std, delta = delta_real)
 
         mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation=True)
-        self.assertAlmostEqual(mean.item(), mean, delta = delta_aprox)
-        self.assertAlmostEqual(std.item(), std, delta = delta_aprox)
+        self.assertAlmostEqual(mean.item(), expected_mean, delta = delta_aprox)
+        self.assertAlmostEqual(std.item(), expected_std, delta = delta_aprox)
+
+    # 20 30 40
+    def test_single_valued_only(self):
+        ic50 = [p.singleton(20), p.singleton(30), p.singleton(40)]
+        self.check_mean_std(ic50, 30, 8.1650)
 
     # 30 >50 >50
     def test_right_censored_30_50_50(self):

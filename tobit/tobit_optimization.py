@@ -26,7 +26,7 @@ def read_normalized_tensors_from_assay_intervals(intervals: List[p.interval.Inte
             single_valued.append(interval.lower)
         elif interval.upper == p.inf:
             right_censored.append(interval.lower)
-        elif interval.lower == 0:
+        elif interval.lower == 0 or interval.lower == -p.inf:
             left_censored.append(interval.upper)
         else:
             raise Exception('Uncensored interval encountered', interval)
@@ -63,6 +63,7 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
     if aproximation:
         log_1_minus_cdf_aprox_model = load_log_1_minus_cdf_aproximation_model()
     single_val, right_censored, left_censored, data_mean, data_std, N = read_normalized_tensors_from_assay_intervals(intervals)
+    print(left_censored)
     delta, gamma = to_tensor(0, grad = True), to_tensor(1, grad = True)
     optimizer = t.optim.SGD([delta, gamma], lr=1e-1)
     patience = 5
@@ -115,10 +116,10 @@ def plot_gausian(mean, std):
     plt.plot(x, norm.pdf(x, mean, std))
 
 if __name__ == '__main__':
-    no_tobit = np.array([30, 30, 30, 30, 50])
+    no_tobit = np.array([10, 10, 30])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [ p.singleton(30), p.singleton(30), p.singleton(30), p.singleton(30), p.closed(50, p.inf)]
+    ic50 = [ p.closed(-p.inf, 10), p.closed(-p.inf, 10), p.singleton(30)]
     mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = False)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
