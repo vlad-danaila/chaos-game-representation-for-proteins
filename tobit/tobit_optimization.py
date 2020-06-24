@@ -107,7 +107,7 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
         else:
             patience = 5
 
-        if i % 1 == 0:
+        if i % 100 == 0:
             print(i, delta, gamma)
     print(i, delta, gamma)
     mean, std = delta / gamma, 1 / gamma
@@ -118,10 +118,10 @@ def plot_gausian(mean, std):
     plt.plot(x, norm.pdf(x, mean, std))
 
 if __name__ == '__main__':
-    no_tobit = np.array([30, 30, 10])
+    no_tobit = np.array([30, 30, 30, 30, 20, 10])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [ p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.singleton(10)]
+    ic50 = [ p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.singleton(10), p.singleton(20)]
     mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = True)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
