@@ -20,7 +20,9 @@ class LogCdfSoftplusAproximation(Module):
         self.q = Parameter(to_tensor(-2.0691 + random()))
 
     def forward(self, x):
-        return t.sigmoid(self.a * x + self.b) * self.m * t.log(self.n + t.exp(self.p * x + self.q))
+        # the max is for numerical stability
+        log_arg = t.max(self.n + t.exp(self.p * x + self.q), t.tensor(1e-10, dtype=t.float))
+        return t.sigmoid(self.a * x + self.b) * self.m * t.log(log_arg)
 
 class LogCdfEnsembleAproximation(Module):
 
@@ -60,16 +62,16 @@ def fit_softplus_to_log_1_minus_cdf(load_from_chekpoint = False):
     t.save(model.state_dict(), constants.LOG_CDF_APROXIMATION_CHECKPOINT)
 
 def log_cdf_plot(aporx_function):
-    x = t.tensor(np.linspace(-50, 50, 1000), dtype=t.float64, requires_grad=False)
+    x = t.tensor(np.linspace(-80, 80, 1000), dtype=t.float64, requires_grad=False)
     plt.plot(x.clone().detach().numpy(), aporx_function(x).clone().detach().numpy())
 
 if __name__ == '__main__':
-    fit_softplus_to_log_1_minus_cdf(load_from_chekpoint=True)
+    # fit_softplus_to_log_1_minus_cdf(load_from_chekpoint=True)
 
-    model_log_1_minus_cdf: Module = LogCdfEnsembleAproximation()
-    model_log_1_minus_cdf.load_state_dict(t.load(constants.LOG_CDF_APROXIMATION_CHECKPOINT))
+    model_log_cdf: Module = LogCdfEnsembleAproximation()
+    model_log_cdf.load_state_dict(t.load(constants.LOG_CDF_APROXIMATION_CHECKPOINT))
 
     log_cdf_plot(lambda x: t.log(to_tensor(norm.cdf(x))))
-    log_cdf_plot(lambda x: model_log_1_minus_cdf.forward(x))
+    log_cdf_plot(lambda x: model_log_cdf.forward(x))
 
     plt.show()
