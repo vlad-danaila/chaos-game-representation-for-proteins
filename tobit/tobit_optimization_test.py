@@ -2,7 +2,7 @@ import unittest
 import portion as p
 from tobit.tobit_optimization import tobit_mean_and_variance_reparametrization
 
-DISABLE_LONG_RUNNING_TESTS = True
+ENABLE_LONG_RUNNING_TESTS = True
 
 class TobitOptimizationTest(unittest.TestCase):
 
@@ -42,7 +42,7 @@ class TobitOptimizationTest(unittest.TestCase):
 
     # 6) 50 >30 >30
     def test_right_censored_50_30_30(self):
-        if not DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.singleton(50), p.closed(30, p.inf), p.closed(30, p.inf)]
             self.check_mean_std(ic50, 49.9330, 0.3652)
 
@@ -53,7 +53,7 @@ class TobitOptimizationTest(unittest.TestCase):
 
     # 8) >30 >30 >30
     def test_all_right_censored(self):
-        if not DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(30, p.inf), p.closed(30, p.inf), p.closed(30, p.inf)]
             self.check_mean_std(ic50, 30, 1e-10)
 
@@ -79,13 +79,13 @@ class TobitOptimizationTest(unittest.TestCase):
 
     # 13) 10 <30 <30
     def test_left_censored_30_30_10(self):
-        if not DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.singleton(10)]
             self.check_mean_std(ic50, 10.0067, 0.3653)
 
     # 14) 10 <30 <30 <30 <30
     def test_left_censored_30_30_30_30_10(self):
-        if not DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.singleton(10)]
             self.check_mean_std(ic50, 10.0055, 0.3325)
 
@@ -126,25 +126,25 @@ class TobitOptimizationTest(unittest.TestCase):
 
     # 22) >30 40 <50
     def test_left_right_censored_30_40_50(self):
-        if DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(30, p.inf), p.singleton(40), p.closed(-p.inf, 50)]
             self.check_mean_std(ic50, 40, 0.1714)
 
     # 23) >20 >30 40 <50
     def test_left_right_censored_20_30_40_50(self):
-        if DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(20, p.inf), p.closed(30, p.inf), p.singleton(40), p.closed(-p.inf, 50)]
             self.check_mean_std(ic50, 39.9970, 0.2393)
 
     # 24) >20 >30 <50
     def test_left_right_censored_20_30_50(self):
-        if DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(20, p.inf), p.closed(30, p.inf), p.closed(-p.inf, 50)]
             self.check_mean_std(ic50, 40.1529, 2.6186)
 
     # 25) <20 >30
     def test_diverge_20_30(self):
-        if DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(-p.inf, 20), p.closed(30, p.inf)]
             # is the negative std correct ?
             self.check_mean_std(ic50, 25, -1.2508)
@@ -152,13 +152,13 @@ class TobitOptimizationTest(unittest.TestCase):
     # interesting case only the lower 25 bound is taken into account
     # 26) <20 >25 >50 >50 >50
     def test_diverge_20_25_50_50_50(self):
-        if DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(-p.inf, 20), p.closed(25, p.inf), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf)]
             self.check_mean_std(ic50, 22.5357, -0.9952)
 
     # 27) >30 35 37 <50
     def test_left_right_censoring_30_35_37_50(self):
-        if DISABLE_LONG_RUNNING_TESTS:
+        if ENABLE_LONG_RUNNING_TESTS:
             ic50 = [p.closed(30, p.inf), p.singleton(35), p.singleton(37), p.closed(-p.inf, 50)]
             self.check_mean_std(ic50, 36.0000, 1.0001)
 
