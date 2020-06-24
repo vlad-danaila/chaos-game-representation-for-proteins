@@ -148,3 +148,20 @@ class TobitOptimizationTest(unittest.TestCase):
             ic50 = [p.closed(-p.inf, 20), p.closed(30, p.inf)]
             # is the negative std correct ?
             self.check_mean_std(ic50, 25, -1.2508)
+
+    # 26) <20 >25 >50 >50 >50
+    def test_diverge_20_25_50_50_50(self):
+        if DISABLE_LONG_RUNNING_TESTS:
+            ic50 = [p.closed(-p.inf, 20), p.closed(25, p.inf), p.closed(50, p.inf), p.closed(50, p.inf), p.closed(50, p.inf)]
+            self.check_mean_std(ic50, 22.5357, -0.9952)
+
+    # 27) >30 35 37 <50
+    def test_left_right_censoring_30_35_37_50(self):
+        if DISABLE_LONG_RUNNING_TESTS:
+            ic50 = [p.closed(30, p.inf), p.singleton(35), p.singleton(37), p.closed(-p.inf, 50)]
+            self.check_mean_std(ic50, 36.0000, 1.0001)
+
+    # 28) <30 32 34 >50
+    def test_divergent_30_32_34_50(self):
+        ic50 = [p.closed(-p.inf, 30), p.singleton(32), p.singleton(34), p.closed(50, p.inf)]
+        self.check_mean_std(ic50, 36.0223, 14.4379)

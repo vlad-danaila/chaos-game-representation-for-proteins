@@ -116,10 +116,10 @@ def plot_gausian(mean, std):
     plt.plot(x, norm.pdf(x, mean, std))
 
 if __name__ == '__main__':
-    no_tobit = np.array([20, 30])
+    no_tobit = np.array([30, 35, 37, 50])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
-    ic50 = [p.closed(-p.inf, 20), p.closed(30, p.inf)]
+    ic50 = [p.closed(-p.inf, 30), p.singleton(36), p.singleton(34), p.closed(50, p.inf)]
     mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = False)
 
     print('No tobit mean', no_tobit_mean, 'std', no_tobit_std)
