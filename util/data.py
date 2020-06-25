@@ -1,9 +1,13 @@
 import torch as t
 
 def normalize(x, mean, std, epsilon = 0):
+    if x is None:
+        return None
     return (x - mean) / (std + epsilon)
 
 def unnormalize(x, mean, std):
+    if x is None:
+        return None
     return (x * std) + mean
 
 def to_numpy(tensor: t.Tensor):

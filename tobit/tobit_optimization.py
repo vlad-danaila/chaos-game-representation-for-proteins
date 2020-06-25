@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tobit.log_cdf_aproximation import LogCdfEnsembleAproximation
 from util.data import normalize, unnormalize, to_tensor, to_numpy
+from util.display import plot_gausian
 
 # this is the same as -sum(ln(gamma) + ln(pdf(gamma * y - delta)))
 # def pdf_negative_log_likelihood_reparametized(y, delta, gamma):
@@ -106,10 +107,6 @@ def tobit_mean_and_variance_reparametrization(intervals: List[p.interval.Interva
     print(i, delta, gamma)
     mean, std = delta / gamma, 1 / gamma
     return unnormalize(mean, data_mean, data_std), std * data_std
-
-def plot_gausian(mean, std):
-    x = np.linspace(mean - 3 * std, mean + 3 * std, 1000)
-    plt.plot(x, norm.pdf(x, mean, std))
 
 if __name__ == '__main__':
     no_tobit = np.array([10, 30, 40, 42, 44, 60, 70])
