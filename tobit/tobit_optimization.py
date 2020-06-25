@@ -1,4 +1,3 @@
-from data.assay_reader import Assay
 import portion as p
 import torch as t
 from typing import List
@@ -7,9 +6,6 @@ import math
 from scipy.stats import norm
 import numpy as np
 import matplotlib.pyplot as plt
-from math import sqrt, pi, log
-import tobit
-from tobit.cdf_proximation import cdf_aproximation_4
 from tobit.log_cdf_aproximation import LogCdfEnsembleAproximation
 from util.data import normalize, unnormalize, to_tensor, to_numpy
 
@@ -116,7 +112,7 @@ def plot_gausian(mean, std):
     plt.plot(x, norm.pdf(x, mean, std))
 
 if __name__ == '__main__':
-    no_tobit = np.array([10, 30, 40, 42, 44, 60])
+    no_tobit = np.array([10, 30, 40, 42, 44, 60, 70])
     no_tobit_mean, no_tobit_std = norm.fit(no_tobit)
 
     ic50 = [p.closed(-p.inf, 10), p.closed(-p.inf, 30), p.singleton(40), p.singleton(42), p.singleton(44), p.closed(60, p.inf), p.closed(70, p.inf)]
@@ -128,7 +124,3 @@ if __name__ == '__main__':
     plot_gausian(to_numpy(mean), to_numpy(std))
 
     plt.show()
-
-'''
-    TODO: Handle left censoring
-'''

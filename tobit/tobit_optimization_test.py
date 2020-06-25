@@ -1,19 +1,25 @@
 import unittest
 import portion as p
 from tobit.tobit_optimization import tobit_mean_and_variance_reparametrization
+from tobit.tobit_torch_function import log_cdf, tobit_mean_and_variance_reparametrization as tobit_fit_mean_and_std
 
-ENABLE_LONG_RUNNING_TESTS = True
+ENABLE_LONG_RUNNING_TESTS = False
 
 class TobitOptimizationTest(unittest.TestCase):
 
     def check_mean_std(self, ic50, expected_mean, expected_std, delta_real = .4, delta_aprox = .5):
+        # Manual compute gradients
         mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = False)
         self.assertAlmostEqual(mean.item(), expected_mean, delta = delta_real)
         self.assertAlmostEqual(std.item(), expected_std, delta = delta_real)
-
+        # Aproximate log cdf
         mean, std = tobit_mean_and_variance_reparametrization(ic50, aproximation = True)
         self.assertAlmostEqual(mean.item(), expected_mean, delta = delta_aprox)
         self.assertAlmostEqual(std.item(), expected_std, delta = delta_aprox)
+        # Custom torch autograd function
+        mean, std = tobit_fit_mean_and_std(ic50)
+        self.assertAlmostEqual(mean.item(), expected_mean, delta = delta_real)
+        self.assertAlmostEqual(std.item(), expected_std, delta = delta_real)
 
     # 1) 20 30 40
     def test_single_valued_only(self):
@@ -101,8 +107,9 @@ class TobitOptimizationTest(unittest.TestCase):
 
     # 17) <30 <30 <30
     def test_left_censored_30_30_30(self):
-        ic50 = [p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.closed(-p.inf, 30)]
-        self.check_mean_std(ic50, 30.0000, 1.0000e-10)
+        if ENABLE_LONG_RUNNING_TESTS:
+            ic50 = [p.closed(-p.inf, 30), p.closed(-p.inf, 30), p.closed(-p.inf, 30)]
+            self.check_mean_std(ic50, 30.0000, 1.0000e-10)
 
     # 18) <10 <20 30
     def test_left_censored_10_20_30(self):
