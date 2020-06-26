@@ -2,8 +2,6 @@ from scipy.stats import norm
 from util.data import normalize
 from util.display import plot_gausian, plot_pdf
 import matplotlib.pyplot as plt
-from math import inf
-import numpy as np
 
 def pdf(input, mean = 0, std = 1, lower = 0, upper = None):
     x = normalize(input, mean, std)
