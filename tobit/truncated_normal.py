@@ -1,9 +1,9 @@
 from scipy.stats import norm
 from util.data import normalize
-from util.display import plot_gausian, plot_pdf
 import matplotlib.pyplot as plt
+import numpy as np
 
-def pdf(input, mean = 0, std = 1, lower = 0, upper = None):
+def truncated_normal_pdf(input, mean = 0, std = 1, lower = 0, upper = None):
     x = normalize(input, mean, std)
     low = normalize(lower, mean, std)
     high = normalize(upper, mean, std)
@@ -18,8 +18,11 @@ def pdf(input, mean = 0, std = 1, lower = 0, upper = None):
 
     return pdf_x / (std * (cdf_high - cdf_low))
 
+low_plot_bound, high_plot_bound = 10, 10
+
 if __name__ == '__main__':
     mean, std = -10, 10
-    plot_gausian(mean, std)
-    plot_pdf(mean, std, lambda x: pdf(x, mean, std))
+    x = np.linspace(mean - low_plot_bound * std, mean + high_plot_bound * std, 1000)
+    plt.plot(x, norm.pdf(x, mean, std))
+    plt.plot(x, truncated_normal_pdf(x, mean, std))
     plt.show()
